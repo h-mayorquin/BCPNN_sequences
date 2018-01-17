@@ -11,7 +11,8 @@ epoch_end_string = 'epoch_end'
 class BCPNNModular:
     def __init__(self, hypercolumns, minicolumns, beta=None, w=None, G=1.0, tau_m=0.020, g_w=1.0, g_w_ampa=1.0, g_beta=1,
                  tau_z_pre=0.150, tau_z_post=0.005, tau_z_pre_ampa=0.005, tau_z_post_ampa=0.005, tau_p=10.0, tau_k=0.010,
-                 tau_a=2.70, g_a=97.0, g_I=10.0, p=1.0, k=0.0, sigma=1.0, epsilon=1e-20, k_inner=False, prng=np.random):
+                 tau_a=2.70, g_a=97.0, g_I=10.0, p=1.0, k=0.0, sigma=1.0, epsilon=1e-20, k_inner=False, prng=np.random,
+                 diagonal_zero=True):
         # Initial values are taken from the paper on memory by Marklund and Lansner also from Phil's paper
 
         # Random number generator
@@ -25,10 +26,7 @@ class BCPNNModular:
 
         self.n_units = self.hypercolumns * self.minicolumns
 
-        if hypercolumns == 1 and g_w < self.epsilon:
-            self.diagonal_zero = False
-        else:
-            self.diagonal_zero = True
+        self.diagonal_zero = diagonal_zero
 
         # Connectivity
         self.beta = beta

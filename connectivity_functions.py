@@ -74,7 +74,7 @@ def get_beta(p, epsilon=1e-10):
     return beta
 
 
-def softmax(input, t=1.0, minicolumns=2):
+def softmax(input_vector, t=1.0, minicolumns=2):
     """Calculate the softmax of a list of numbers w.
 
     Parameters
@@ -103,7 +103,7 @@ def softmax(input, t=1.0, minicolumns=2):
     lower_bound = -600
     upper_bound = 600
 
-    x = np.copy(input)
+    x = np.copy(input_vector)
     x_size = x.size
     x = np.reshape(x, (x_size // minicolumns, minicolumns))
     x = np.array(x) / t
