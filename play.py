@@ -16,7 +16,7 @@ np.set_printoptions(suppress=True, precision=2)
 
 sns.set(font_scale=3.0)
 
-from network import Protocol, BCPNNFast, NetworkManager
+from network import Protocol, BCPNNModular, NetworkManager
 from plotting_functions import plot_weight_matrix
 
 # Patterns parameters
@@ -26,7 +26,7 @@ dt = 0.001
 values_to_save = ['o', 's', 'z_pre', 'z_post', 'a', 'p_pre', 'p_post', 'p_co', 'z_co', 'w', 'p',]
 
 # Build the network
-nn = BCPNNFast(hypercolumns, minicolumns)
+nn = BCPNNModular(hypercolumns, minicolumns)
 
 # Build the manager
 manager = NetworkManager(nn=nn, dt=dt, values_to_save=values_to_save)

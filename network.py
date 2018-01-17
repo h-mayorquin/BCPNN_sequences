@@ -7,161 +7,8 @@ import IPython
 
 epoch_end_string = 'epoch_end'
 
-class BCPNN:
-    def __init__(self, hypercolumns, minicolumns, beta=None, w=None, o=None, s=None, a=None, z_pre=None,
-                 z_post=None, p_pre=None, p_post=None, p_co=None, G=1.0, tau_m=0.050, g_w=1, g_beta=1,
-                 tau_z_pre=0.240, tau_z_post=0.240, tau_p=10.0, tau_a=2.70, g_a=97.0, g_I=10.0,
-                 k=0.0, sigma=1.0, epsilon=1e-20, prng=np.random):
-        # Initial values are taken from the paper on memory by Marklund and Lansner.
 
-        # Random number generator
-        self.prng = prng
-        self.sigma = sigma
-        self.epsilon = epsilon
-
-        # Network parameters
-        self.hypercolumns = hypercolumns
-        self.minicolumns = minicolumns
-
-        self.n_units = self.hypercolumns * self.minicolumns
-
-        # Connectivity
-        self.beta = beta
-        self.w = w
-
-        # State variables
-        self.s = s
-        self.o = o
-        self.a = a
-        self.z_pre = z_pre
-        self.z_post = z_post
-        self.p_pre = p_pre
-        self.p_post = p_post
-        self.p_co = p_co
-
-        #  Dynamic Parameters
-        self.G = G
-        self.tau_m = tau_m
-        self.tau_z_pre = tau_z_pre
-        self.tau_z_post = tau_z_post
-        self.tau_p = tau_p
-        self.tau_a = tau_a
-        self.k = k
-        self.g_a = g_a
-        self.g_w = g_w
-        self.g_beta = g_beta
-        self.g_I = g_I
-
-        # If state variables and parameters are not initialized
-        if o is None:
-            self.o = np.ones(self.hypercolumns * self.minicolumns) * (1.0 / self.minicolumns)
-
-        if s is None:
-            self.s = np.log(np.ones(self.hypercolumns * self.minicolumns) * (1.0 / self.minicolumns))
-
-        if z_pre is None:
-            self.z_pre = np.ones_like(self.o) * (1.0 / self.minicolumns)
-
-        if z_post is None:
-            self.z_post = np.ones_like(self.o) * (1.0 / self.minicolumns)
-
-        if p_pre is None:
-            self.p_pre = np.zeros_like(self.o)
-
-        if p_post is None:
-            self.p_post = np.zeros_like(self.o)
-
-        if p_co is None:
-            self.p_co = np.zeros((self.o.size, self.o.size))
-
-        if beta is None:
-            self.beta = np.log(np.ones_like(self.o) * (1.0 / self.minicolumns))
-
-        if w is None:
-            self.w = np.zeros((self.n_units, self.n_units))
-
-        # Set the coactivations to a default
-        self.z_co = np.ones((self.n_units, self.n_units)) * (1.0 / self.minicolumns ** 2)
-        # Set the adaptation to zeros by default
-        self.a = np.zeros_like(self.o)
-        # Set the clamping to zero by defalut
-        self.I = np.zeros_like(self.o)
-        # Initialize saving dictionary
-
-        self.history = None
-
-    def get_parameters(self):
-        """
-        Get the parameters of the model
-
-        :return: a dictionary with the parameters
-        """
-        parameters = {'tau_m': self.tau_m, 'tau_z_post': self.tau_z_post, 'tau_z_pre': self.tau_z_post,
-                      'tau_p': self.tau_p, 'tau_a': self.tau_a, 'g_a': self.g_a, 'g_w': self.g_w,
-                      'g_beta': self.g_beta, 'g_I':self.g_I, 'sigma':self.sigma, 'k': self.k}
-
-        return parameters
-
-    def reset_values(self, keep_connectivity=False):
-        self.o = np.ones(self.n_units) * (1.0 / self.minicolumns)
-        self.s = np.log(np.ones(self.n_units) * (1.0 / self.minicolumns))
-        self.z_pre = np.ones_like(self.o) * (1.0 / self.minicolumns)
-        self.z_post = np.ones_like(self.o) * (1.0 / self.minicolumns)
-        self.z_co = np.ones((self.n_units, self.n_units)) * (1.0 / self.minicolumns ** 2)
-
-        self.p_pre = np.zeros_like(self.o)
-        self.p_post = np.zeros_like(self.o)
-        self.p_co = np.zeros((self.n_units, self.n_units))
-
-        self.a = np.zeros_like(self.o)
-
-        if not keep_connectivity:
-            self.beta = np.log(np.ones_like(self.o) * (1.0 / self.minicolumns))
-            self.w = np.zeros((self.n_units, self.n_units))
-
-    def randomize_pattern(self):
-        self.o = self.prng.rand(self.n_units)
-        self.s = np.log(self.prng.rand(self.n_units))
-
-        # A follows, if o is randomized sent a to zero.
-        self.a = np.zeros_like(self.o)
-
-    def update_discrete(self, N=1):
-        for n in range(N):
-            self.s = self.beta + np.dot(self.w, self.o)
-            self.o = softmax(self.s, t=(1/self.G), minicolumns=self.minicolumns)
-
-    def update_continuous(self, dt=1.0, sigma=None):
-
-        if sigma is None:
-            sigma = self.prng.normal(0, self.sigma, self.n_units)
-
-        # Updated the probability and the support
-        self.s += (dt / self.tau_m) * (self.g_beta * self.beta + self.g_w * np.dot(self.w, self.o)
-                                       + self.g_I * log_epsilon(self.I) - self.s - self.g_a * self.a
-                                       + sigma)  # This last term is the noise
-        # Softmax
-        self.o = softmax(self.s, t=(1/self.G), minicolumns=self.minicolumns)
-
-        # Update the adaptation
-        self.a += (dt / self.tau_a) * (self.o - self.a)
-
-        # Updated the z-traces
-        self.z_pre += (dt / self.tau_z_pre) * (self.o - self.z_pre)
-        self.z_post += (dt / self.tau_z_post) * (self.o - self.z_post)
-        self.z_co = np.outer(self.z_post, self.z_pre)
-
-        if self.k > self.epsilon:
-            # Updated the probability
-            self.p_pre += (dt / self.tau_p) * (self.z_pre - self.p_pre) * self.k
-            self.p_post += (dt / self.tau_p) * (self.z_post - self.p_post) * self.k
-            self.p_co += (dt / self.tau_p) * (self.z_co - self.p_co) * self.k
-
-            self.w = get_w_pre_post(self.p_co, self.p_pre, self.p_post)
-            self.beta = get_beta(self.p_post)
-
-
-class BCPNNFast:
+class BCPNNModular:
     def __init__(self, hypercolumns, minicolumns, beta=None, w=None, G=1.0, tau_m=0.020, g_w=1.0, g_w_ampa=1.0, g_beta=1,
                  tau_z_pre=0.150, tau_z_post=0.005, tau_z_pre_ampa=0.005, tau_z_post_ampa=0.005, tau_p=10.0, tau_k=0.010,
                  tau_a=2.70, g_a=97.0, g_I=10.0, p=1.0, k=0.0, sigma=1.0, epsilon=1e-20, k_inner=False, prng=np.random):
@@ -177,6 +24,11 @@ class BCPNNFast:
         self.minicolumns = minicolumns
 
         self.n_units = self.hypercolumns * self.minicolumns
+
+        if hypercolumns == 1 and g_w < self.epsilon:
+            self.diagonal_zero = False
+        else:
+            self.diagonal_zero = True
 
         # Connectivity
         self.beta = beta
@@ -210,6 +62,7 @@ class BCPNNFast:
         self.beta = np.log(np.ones_like(self.o) * (1.0 / self.minicolumns))
 
         # NMDA values
+        self.i_nmda = np.zeros(self.n_units)
         self.z_pre = np.ones(self.n_units) * 1.0 / self.minicolumns
         self.z_post = np.ones(self.n_units) * 1.0 / self.minicolumns
         self.z_co = np.ones((self.n_units, self.n_units)) * 1.0 / (self.minicolumns ** 2)
@@ -219,6 +72,7 @@ class BCPNNFast:
         self.w = np.zeros((self.n_units, self.n_units))
 
         # Ampa values
+        self.i_ampa = np.zeros(self.n_units)
         self.z_pre_ampa = np.ones(self.n_units) * 1.0 / self.minicolumns
         self.z_post_ampa = np.ones(self.n_units) * 1.0 / self.minicolumns
         self.z_co_ampa = np.ones((self.n_units, self.n_units)) * 1.0 / (self.minicolumns ** 2)
@@ -253,6 +107,7 @@ class BCPNNFast:
         self.beta = np.log(np.ones_like(self.o) * (1.0 / self.minicolumns))
 
         # NMDA values
+        self.i_nmda = np.zeros(self.n_units)
         self.z_pre = np.ones(self.n_units) * 1.0 / self.minicolumns
         self.z_post = np.ones(self.n_units) * 1.0 / self.minicolumns
         self.z_co = np.ones((self.n_units, self.n_units)) * 1.0 / (self.minicolumns ** 2)
@@ -261,12 +116,14 @@ class BCPNNFast:
         self.p_co = np.ones((self.n_units, self.n_units)) * 1.0 / (self.minicolumns ** 2)
 
         # Ampa values
+        self.i_ampa = np.zeros(self.n_units)
         self.z_pre_ampa = np.ones(self.n_units) * 1.0 / self.minicolumns
         self.z_post_ampa = np.ones(self.n_units) * 1.0 / self.minicolumns
         self.z_co_ampa = np.ones((self.n_units, self.n_units)) * 1.0 / (self.minicolumns ** 2)
         self.p_pre_ampa = np.ones(self.n_units) * 1.0 / self.minicolumns
         self.p_post_ampa = np.ones(self.n_units) * 1.0 / self.minicolumns
         self.p_co_ampa = np.ones((self.n_units, self.n_units)) * 1.0 / (self.minicolumns ** 2)
+
 
         # Set the adaptation to zeros by default
         self.a = np.zeros_like(self.o)
@@ -294,15 +151,18 @@ class BCPNNFast:
             sigma = self.prng.normal(0, self.sigma, self.n_units)
 
         # Updated the probability and the support
-        self.s += (dt / self.tau_m) * (self.g_w * np.dot(self.w, self.z_pre)  # NMDA effects
-                                       + self.g_w_ampa * np.dot(self.w_ampa, self.z_pre_ampa)  # Ampa effects
+        self.i_nmda = self.g_w * self.w @ self.z_pre
+        self.i_ampa = self.g_w_ampa * self.w_ampa @ self.z_pre_ampa
+
+        self.s += (dt / self.tau_m) * (self.i_nmda  # NMDA effects
+                                       + self.i_ampa  # Ampa effects
                                        + self.g_beta * self.beta  # Bias
                                        + self.g_I * log_epsilon(self.I)  # Input current
                                        - self.s  # s follow all of the s above
                                        - self.g_a * self.a  # Adaptation
                                        + sigma)  # This last term is the noise
         # Soft-max
-        self.o = softmax(self.s, t=(1.0/self.G), minicolumns=self.minicolumns)
+        self.o = softmax(self.s, t=self.G, minicolumns=self.minicolumns)
 
         # Update the adaptation
         self.a += (dt / self.tau_a) * (self.o - self.a)
@@ -346,8 +206,10 @@ class BCPNNFast:
 
         if self.k > self.epsilon:
             self.beta = get_beta(self.p_post, self.epsilon)
-            self.w_ampa = get_w_pre_post(self.p_co_ampa, self.p_pre_ampa, self.p_post_ampa, self.p, self.epsilon)
-            self.w = get_w_pre_post(self.p_co, self.p_pre, self.p_post, self.p, self.epsilon)
+            self.w_ampa = get_w_pre_post(self.p_co_ampa, self.p_pre_ampa, self.p_post_ampa, self.p,
+                                         self.epsilon, diagonal_zero=self.diagonal_zero)
+            self.w = get_w_pre_post(self.p_co, self.p_pre, self.p_post, self.p,
+                                    self.epsilon, diagonal_zero=self.diagonal_zero)
 
 
 class NetworkManager:
@@ -393,11 +255,12 @@ class NetworkManager:
 
         # Reinitialize the dictionary
         saving_dictionary = {'o': False, 's': False, 'a': False,
-                                  'z_pre': False, 'z_post': False, 'z_co': False,
-                                  'p_pre': False, 'p_post': False, 'p_co': False,
-                                  'z_pre_ampa': False,'z_post_ampa': False, 'z_co_ampa': False,
-                                  'p_pre_ampa': False, 'p_post_ampa': False, 'p_co_ampa': False,
-                                  'w_ampa': False, 'w': False, 'beta': False, 'p': False, 'k_d': False}
+                             'z_pre': False, 'z_post': False, 'z_co': False,
+                             'p_pre': False, 'p_post': False, 'p_co': False,
+                             'z_pre_ampa': False,'z_post_ampa': False, 'z_co_ampa': False,
+                             'p_pre_ampa': False, 'p_post_ampa': False, 'p_co_ampa': False,
+                             'i_ampa': False, 'i_nmda': False,
+                             'w_ampa': False, 'w': False, 'beta': False, 'p': False, 'k_d': False}
 
         # Activate the values passed to the function
         for state_variable in values_to_save:
@@ -419,6 +282,7 @@ class NetworkManager:
                         'z_pre_ampa': empty_array, 'z_post_ampa': empty_array,
                         'p_pre_ampa': empty_array, 'p_post_ampa': empty_array,
                         'z_co_ampa': empty_array_square, 'p_co_ampa': empty_array_square, 'w_ampa': empty_array_square,
+                        'i_nmda': empty_array, 'i_ampa': empty_array,
                         'beta': empty_array, 'k_d': np.array(([])), 'p': np.array([])}
 
     def append_history(self, history, saving_dictionary):
@@ -443,7 +307,10 @@ class NetworkManager:
         if saving_dictionary['p']:
             history['p'].append(np.copy(self.nn.p))
 
+
         # NMDA connectivity
+        if saving_dictionary['i_nmda']:
+            history['i_nmda'].append(np.copy(self.nn.i_nmda))
         if saving_dictionary['z_pre']:
             history['z_pre'].append(np.copy(self.nn.z_pre))
         if saving_dictionary['z_post']:
@@ -460,6 +327,8 @@ class NetworkManager:
             history['w'].append(np.copy(self.nn.w))
 
         # AMPA connectivity
+        if saving_dictionary['i_ampa']:
+            history['i_ampa'].append(np.copy(self.nn.i_ampa))
         if saving_dictionary['z_pre_ampa']:
             history['z_pre_ampa'].append(np.copy(self.nn.z_pre_ampa))
         if saving_dictionary['z_post_ampa']:
