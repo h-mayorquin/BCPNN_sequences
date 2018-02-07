@@ -123,6 +123,20 @@ def normalize_array(array):
     return array / np.sum(array, axis=1)[:, np.newaxis]
 
 
+def strict_max(x, minicolumns):
+    """
+    A strict max that returns an array with 1 where the maximum of every minicolumn is
+    :param x: the array
+    :param minicolumns: number of minicolumns
+    :return: the stric_max of the array
+    """
+
+    x = np.reshape(x, (x.size // minicolumns, minicolumns))
+    z = np.zeros_like(x)
+    z[:, np.argmax(x, axis=1)] = 1
+
+    return z.reshape(x.size)
+
 def normalize_p(p, hypercolumns, minicolumns):
 
     x = p.reshape((hypercolumns, minicolumns))

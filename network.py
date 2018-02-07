@@ -1,6 +1,6 @@
 import random
 import numpy as np
-from connectivity_functions import softmax, get_w_pre_post, get_beta, log_epsilon
+from connectivity_functions import softmax, get_w_pre_post, get_beta, log_epsilon, strict_max
 from data_transformer import build_ortogonal_patterns
 import IPython
 
@@ -12,7 +12,7 @@ class BCPNNModular:
     def __init__(self, hypercolumns, minicolumns, beta=None, w=None, G=1.0, tau_m=0.020, g_w=1.0, g_w_ampa=1.0, g_beta=1,
                  tau_z_pre=0.150, tau_z_post=0.005, tau_z_pre_ampa=0.005, tau_z_post_ampa=0.005, tau_p=10.0, tau_k=0.010,
                  tau_a=2.70, g_a=97.0, g_I=10.0, p=1.0, k=0.0, sigma=1.0, epsilon=1e-20, k_inner=False, prng=np.random,
-                 diagonal_zero=True):
+                 diagonal_zero=True, z_transfer=True):
         # Initial values are taken from the paper on memory by Marklund and Lansner also from Phil's paper
 
         # Random number generator
@@ -27,6 +27,7 @@ class BCPNNModular:
         self.n_units = self.hypercolumns * self.minicolumns
 
         self.diagonal_zero = diagonal_zero
+        self.z_transfer = z_transfer
 
         # Connectivity
         self.beta = beta
@@ -149,8 +150,12 @@ class BCPNNModular:
             sigma = self.prng.normal(0, self.sigma, self.n_units)
 
         # Updated the probability and the support
-        self.i_nmda = self.g_w * self.w @ self.z_pre
-        self.i_ampa = self.g_w_ampa * self.w_ampa @ self.z_pre_ampa
+        if self.z_transfer:
+            self.i_nmda = self.g_w * self.w @ self.z_pre
+            self.i_ampa = self.g_w_ampa * self.w_ampa @ self.z_pre_ampa
+        else:
+            self.i_nmda = self.g_w * self.w @ self.o
+            self.i_ampa = self.g_w_ampa * self.w_ampa @ self.o
 
         self.s += (dt / self.tau_m) * (self.i_nmda  # NMDA effects
                                        + self.i_ampa  # Ampa effects
@@ -694,5 +699,215 @@ class Protocol:
         return sequences, p_array, sequence_array, overlap_array
 
 
+
+
+class BCPNNPefect:
+    def __init__(self, hypercolumns, minicolumns, beta=None, w=None, G=1.0, tau_m=0.020, g_w=1.0, g_w_ampa=1.0, g_beta=1,
+                 tau_z_pre=0.150, tau_z_post=0.005, tau_z_pre_ampa=0.005, tau_z_post_ampa=0.005, tau_p=10.0, tau_k=0.010,
+                 tau_a=2.70, g_a=97.0, g_I=10.0, p=1.0, k=0.0, sigma=1.0, epsilon=1e-20, k_inner=False, prng=np.random,
+                 diagonal_zero=True, z_transfer=True, strict_maximum=True):
+        # Initial values are taken from the paper on memory by Marklund and Lansner also from Phil's paper
+
+        # Random number generator
+        self.prng = prng
+        self.sigma = sigma
+        self.epsilon = epsilon
+
+        # Network parameters
+        self.hypercolumns = hypercolumns
+        self.minicolumns = minicolumns
+
+        self.n_units = self.hypercolumns * self.minicolumns
+
+        self.diagonal_zero = diagonal_zero
+        self.z_transfer = z_transfer
+        self.strict_maximum = strict_maximum
+
+        # Connectivity
+        self.beta = beta
+        self.w = w
+
+        #  Dynamic Parameters
+        self.G = G
+        self.tau_m = tau_m
+        self.tau_z_pre = tau_z_pre
+        self.tau_z_post = tau_z_post
+        self.tau_z_pre_ampa = tau_z_pre_ampa
+        self.tau_z_post_ampa = tau_z_post_ampa
+        self.tau_p = tau_p
+        self.tau_a = tau_a
+        self.g_a = g_a
+        self.g_w = g_w
+        self.g_w_ampa = g_w_ampa
+        self.g_beta = g_beta
+        self.g_I = g_I
+
+        self.k = k
+        self.tau_k = tau_k
+        self.k_d = 0
+        self.k_inner = k_inner
+
+        self.p = p
+
+        # State variables
+        self.o = np.zeros(self.n_units) * (1.0 / self.minicolumns)
+        self.s = np.log(np.ones(self.n_units) * (1.0 / self.minicolumns))
+        self.beta = np.log(np.ones_like(self.o) * (1.0 / self.minicolumns))
+
+        # NMDA values
+        self.i_nmda = np.zeros(self.n_units)
+        self.z_pre = np.ones(self.n_units) * 1.0 / self.minicolumns
+        self.z_post = np.ones(self.n_units) * 1.0 / self.minicolumns
+        self.z_co = np.ones((self.n_units, self.n_units)) * 1.0 / (self.minicolumns ** 2)
+        self.p_pre = np.ones(self.n_units) * 1.0 / self.minicolumns
+        self.p_post = np.ones(self.n_units) * 1.0 / self.minicolumns
+        self.p_co = np.ones((self.n_units, self.n_units)) * 1.0 / (self.minicolumns ** 2)
+        self.w = np.zeros((self.n_units, self.n_units))
+
+        # Ampa values
+        self.i_ampa = np.zeros(self.n_units)
+        self.z_pre_ampa = np.ones(self.n_units) * 1.0 / self.minicolumns
+        self.z_post_ampa = np.ones(self.n_units) * 1.0 / self.minicolumns
+        self.z_co_ampa = np.ones((self.n_units, self.n_units)) * 1.0 / (self.minicolumns ** 2)
+        self.p_pre_ampa = np.ones(self.n_units) * 1.0 / self.minicolumns
+        self.p_post_ampa = np.ones(self.n_units) * 1.0 / self.minicolumns
+        self.p_co_ampa = np.ones((self.n_units, self.n_units)) * 1.0 / (self.minicolumns ** 2)
+        self.w_ampa = np.zeros((self.n_units, self.n_units))
+
+        # Set the adaptation to zeros by default
+        self.a = np.zeros_like(self.o)
+        # Set the clamping to zero by default
+        self.I = np.zeros_like(self.o)
+
+    def get_parameters(self):
+        """
+        Get the parameters of the model
+
+        :return: a dictionary with the parameters
+        """
+        parameters = {'tau_m': self.tau_m, 'tau_z_post': self.tau_z_post, 'tau_z_pre': self.tau_z_pre,
+                      'tau_p': self.tau_p, 'tau_a': self.tau_a, 'g_a': self.g_a, 'g_w': self.g_w,
+                      'g_beta': self.g_beta, 'g_I':self.g_I, 'sigma':self.sigma, 'k': self.k,
+                      'g_w_ampa': self.g_w_ampa, 'tau_z_post_ampa': self.tau_z_post_ampa,
+                      'tau_z_pre_ampa': self.tau_z_pre_ampa, 'epsilon': self.epsilon, 'G': self.G}
+
+        return parameters
+
+    def reset_values(self, keep_connectivity=True):
+        # State variables
+        self.o = np.zeros(self.n_units) * (1.0 / self.minicolumns)
+        self.s = np.log(np.ones(self.n_units) * (1.0 / self.minicolumns))
+        self.beta = np.log(np.ones_like(self.o) * (1.0 / self.minicolumns))
+
+        # NMDA values
+        self.i_nmda = np.zeros(self.n_units)
+        self.z_pre = np.ones(self.n_units) * 1.0 / self.minicolumns
+        self.z_post = np.ones(self.n_units) * 1.0 / self.minicolumns
+        self.z_co = np.ones((self.n_units, self.n_units)) * 1.0 / (self.minicolumns ** 2)
+        self.p_pre = np.ones(self.n_units) * 1.0 / self.minicolumns
+        self.p_post = np.ones(self.n_units) * 1.0 / self.minicolumns
+        self.p_co = np.ones((self.n_units, self.n_units)) * 1.0 / (self.minicolumns ** 2)
+
+        # Ampa values
+        self.i_ampa = np.zeros(self.n_units)
+        self.z_pre_ampa = np.ones(self.n_units) * 1.0 / self.minicolumns
+        self.z_post_ampa = np.ones(self.n_units) * 1.0 / self.minicolumns
+        self.z_co_ampa = np.ones((self.n_units, self.n_units)) * 1.0 / (self.minicolumns ** 2)
+        self.p_pre_ampa = np.ones(self.n_units) * 1.0 / self.minicolumns
+        self.p_post_ampa = np.ones(self.n_units) * 1.0 / self.minicolumns
+        self.p_co_ampa = np.ones((self.n_units, self.n_units)) * 1.0 / (self.minicolumns ** 2)
+
+
+        # Set the adaptation to zeros by default
+        self.a = np.zeros_like(self.o)
+        # Set the clamping to zero by default
+        self.I = np.zeros_like(self.o)
+
+        if not keep_connectivity:
+            self.beta = np.log(np.ones_like(self.o) * (1.0 / self.minicolumns))
+            self.w = np.zeros((self.n_units, self.n_units))
+            self.w_ampa = np.zeros((self.n_units, self.n_units))
+
+    def randomize_pattern(self):
+        self.o = self.prng.rand(self.n_units)
+        self.s = np.log(self.prng.rand(self.n_units))
+
+        self.z_pre = self.prng.rand(self.n_units)
+        self.z_pre_ampa = self.prng.rand(self.n_units)
+
+        # A follows, if o is randomized sent a to zero.
+        self.a = np.zeros_like(self.o)
+
+    def update_continuous(self, dt=1.0, sigma=None):
+
+        if sigma is None:
+            sigma = self.prng.normal(0, self.sigma, self.n_units)
+
+        # Updated the probability and the support
+        if self.z_transfer:
+            self.i_nmda = self.g_w * self.w @ self.z_pre
+            self.i_ampa = self.g_w_ampa * self.w_ampa @ self.z_pre_ampa
+        else:
+            self.i_nmda = self.g_w * self.w @ self.o
+            self.i_ampa = self.g_w_ampa * self.w_ampa @ self.o
+
+        self.s = (self.i_nmda  # NMDA effects
+                   + self.i_ampa  # Ampa effects
+                   + self.g_beta * self.beta  # Bias
+                   + self.g_I * log_epsilon(self.I)  # Input current
+                   - self.g_a * self.a  # Adaptation
+                   + sigma)  # This last term is the noise
+        # Soft-max
+        if self.strict_maximum:
+            self.o = strict_max(self.s, minicolumns=self.minicolumns)
+        else:
+            self.o = softmax(self.s, t=G, minicolumns=self.minicolumns)
+
+        # Update the adaptation
+        self.a += (dt / self.tau_a) * (self.o - self.a)
+
+        # Updated the z-traces
+        self.z_pre += (dt / self.tau_z_pre) * (self.o - self.z_pre)
+        self.z_post += (dt / self.tau_z_post) * (self.o - self.z_post)
+        self.z_co = np.outer(self.z_post, self.z_pre)
+
+        # Updated the z-traces AMPA
+        self.z_pre_ampa += (dt / self.tau_z_pre_ampa) * (self.o - self.z_pre_ampa)
+        self.z_post_ampa += (dt / self.tau_z_post_ampa) * (self.o - self.z_post_ampa)
+        self.z_co_ampa = np.outer(self.z_post_ampa, self.z_pre_ampa)
+
+        # Modulatory variables
+        self.p += (dt / self.tau_p) * (1 - self.p)
+
+        if self.k_inner:
+            self.k_d += (dt / self.tau_k) * (self.k - self.k_d)
+
+            # Updated the probability of the NMDA connection
+            self.p_pre += (dt / self.tau_p) * (self.z_pre - self.p_pre) * self.k_d
+            self.p_post += (dt / self.tau_p) * (self.z_post - self.p_post) * self.k_d
+            self.p_co += (dt / self.tau_p) * (self.z_co - self.p_co) * self.k_d
+
+            # Updated the probability of AMPA connection
+            self.p_pre_ampa += (dt / self.tau_p) * (self.z_pre_ampa - self.p_pre_ampa) * self.k_d
+            self.p_post_ampa += (dt / self.tau_p) * (self.z_post_ampa - self.p_post_ampa) * self.k_d
+            self.p_co_ampa += (dt / self.tau_p) * (self.z_co_ampa - self.p_co_ampa) * self.k_d
+
+        else:
+            # Updated the probability of the NMDA connection
+            self.p_pre += (dt / self.tau_p) * (self.z_pre - self.p_pre)
+            self.p_post += (dt / self.tau_p) * (self.z_post - self.p_post)
+            self.p_co += (dt / self.tau_p) * (self.z_co - self.p_co)
+
+            # Updated the probability of the AMPA connection
+            self.p_pre_ampa += (dt / self.tau_p) * (self.z_pre_ampa - self.p_pre_ampa)
+            self.p_post_ampa += (dt / self.tau_p) * (self.z_post_ampa - self.p_post_ampa)
+            self.p_co_ampa += (dt / self.tau_p) * (self.z_co_ampa - self.p_co_ampa)
+
+        if self.k > self.epsilon:
+            self.beta = get_beta(self.p_post, self.epsilon)
+            self.w_ampa = get_w_pre_post(self.p_co_ampa, self.p_pre_ampa, self.p_post_ampa, self.p,
+                                         self.epsilon, diagonal_zero=self.diagonal_zero)
+            self.w = get_w_pre_post(self.p_co, self.p_pre, self.p_post, self.p,
+                                    self.epsilon, diagonal_zero=self.diagonal_zero)
 
 
