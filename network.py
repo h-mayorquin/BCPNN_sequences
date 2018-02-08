@@ -150,20 +150,18 @@ class BCPNNModular:
             sigma = self.prng.normal(0, self.sigma, self.n_units)
 
         # Updated the probability and the support
-        if self.z_transfer:
-            self.i_nmda = self.g_w * self.w @ self.z_pre
-            self.i_ampa = self.g_w_ampa * self.w_ampa @ self.z_pre_ampa
-        else:
-            self.i_nmda = self.g_w * self.w @ self.o
-            self.i_ampa = self.g_w_ampa * self.w_ampa @ self.o
+
+        self.i_nmda = self.g_w * self.w @ self.z_pre
+        self.i_ampa = self.g_w_ampa * self.w_ampa @ self.z_pre_ampa
 
         self.s += (dt / self.tau_m) * (self.i_nmda  # NMDA effects
                                        + self.i_ampa  # Ampa effects
                                        + self.g_beta * self.beta  # Bias
                                        + self.g_I * log_epsilon(self.I)  # Input current
-                                       - self.s  # s follow all of the s above
                                        - self.g_a * self.a  # Adaptation
-                                       + sigma)  # This last term is the noise
+                                       + sigma  # This last term is the noise
+                                       - self.s)  # s follow all of the s above
+
         # Soft-max
         self.o = softmax(self.s, t=self.G, minicolumns=self.minicolumns)
 
@@ -705,7 +703,7 @@ class BCPNNPefect:
     def __init__(self, hypercolumns, minicolumns, beta=None, w=None, G=1.0, tau_m=0.020, g_w=1.0, g_w_ampa=1.0, g_beta=1,
                  tau_z_pre=0.150, tau_z_post=0.005, tau_z_pre_ampa=0.005, tau_z_post_ampa=0.005, tau_p=10.0, tau_k=0.010,
                  tau_a=2.70, g_a=97.0, g_I=10.0, p=1.0, k=0.0, sigma=1.0, epsilon=1e-20, k_inner=False, prng=np.random,
-                 diagonal_zero=True, z_transfer=True, strict_maximum=True):
+                 diagonal_zero=True, z_transfer=True, strict_maximum=True, perfect=True):
         # Initial values are taken from the paper on memory by Marklund and Lansner also from Phil's paper
 
         # Random number generator
@@ -722,6 +720,7 @@ class BCPNNPefect:
         self.diagonal_zero = diagonal_zero
         self.z_transfer = z_transfer
         self.strict_maximum = strict_maximum
+        self.perfect = perfect
 
         # Connectivity
         self.beta = beta
@@ -851,17 +850,28 @@ class BCPNNPefect:
             self.i_nmda = self.g_w * self.w @ self.o
             self.i_ampa = self.g_w_ampa * self.w_ampa @ self.o
 
-        self.s = (self.i_nmda  # NMDA effects
-                   + self.i_ampa  # Ampa effects
-                   + self.g_beta * self.beta  # Bias
-                   + self.g_I * log_epsilon(self.I)  # Input current
-                   - self.g_a * self.a  # Adaptation
-                   + sigma)  # This last term is the noise
-        # Soft-max
+        if self.perfect:
+            self.s = (self.i_nmda  # NMDA effects
+                       + self.i_ampa  # Ampa effects
+                       + self.g_beta * self.beta  # Bias
+                       + self.g_I * log_epsilon(self.I)  # Input current
+                       - self.g_a * self.a  # Adaptation
+                       + sigma)  # This last term is the noise
+        else:
+            self.s += (dt / self.tau_m) * (self.i_nmda  # NMDA effects
+                                           + self.i_ampa  # Ampa effects
+                                           + self.g_beta * self.beta  # Bias
+                                           + self.g_I * log_epsilon(self.I)  # Input current
+                                           - self.g_a * self.a  # Adaptation
+                                           + sigma  # This last term is the noise
+                                           - self.s)  # s follow all of the s above
+
+
+            # Soft-max
         if self.strict_maximum:
             self.o = strict_max(self.s, minicolumns=self.minicolumns)
         else:
-            self.o = softmax(self.s, t=G, minicolumns=self.minicolumns)
+            self.o = softmax(self.s, t=self.G, minicolumns=self.minicolumns)
 
         # Update the adaptation
         self.a += (dt / self.tau_a) * (self.o - self.a)
