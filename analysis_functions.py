@@ -129,6 +129,13 @@ def calculate_timings(manager, remove=0.010):
 
 def calculate_recall_time_quantities(manager, T_recall, T_cue, n, sequences):
 
+    # If the manager does not have the patterns yet, get them from the sequences
+    if not manager.stored_patterns_indexes:  # This test for empty list
+        aux = [element for sequence in sequences for element in sequence]
+        manager.stored_patterns_indexes = list(set(aux))
+        manager.n_patterns = len(manager.stored_patterns_indexes)
+
+    # Calculate the timings
     success = calculate_recall_success_sequences(manager, T_recall, T_cue, n, sequences)[0]
     timings = calculate_timings(manager, remove=0.010)
     patterns = [x[0] for x in timings]
