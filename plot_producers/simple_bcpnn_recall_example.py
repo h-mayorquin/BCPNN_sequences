@@ -168,5 +168,5 @@ fig.legend(handles=handles, labels=labels, loc=(0.65, 0.09), fancybox=True, fram
 
 
 # plt.show()
-fig.savefig('./plot_producers/simple_bcpnn_recall.eps', frameon=False, dpi=110, bbox_inches='tight')
+fig.savefig('./plot_producers/simple_bcpnn_recall.pdf', frameon=False, dpi=110, bbox_inches='tight')
 plt.close()
