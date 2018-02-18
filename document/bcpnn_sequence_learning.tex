@@ -31,9 +31,6 @@
 
 \section{Introduction}
 
-\subsection{The BCPNN}
-Explanation of what is the BCPNN, where does it come from, and some applications. 
-
 \subsection{Sequence Learning}
 Section with a brief history of sequence learning in computational nueroscience. Key papers, order, structure. 
 
@@ -41,6 +38,11 @@ Section with a brief history of sequence learning in computational nueroscience.
 The problem started with Lashley \cite{lashley1951problem} Hebb reference. 
 
 The other papers
+
+\subsection{The BCPNN}
+Explanation of what is the BCPNN, where does it come from, and some applications. 
+
+
 
 
 \subsection{A simple phenomenological theory of sequence recall}
@@ -114,9 +116,29 @@ gw_{self} - g_{a} (1 - e^{\frac{t}{\tau_a}}) &=  g w_{next}
 Where we have substituted the proper term for adaptation. We can solve the equation equation above to obtain the persistence time:
 
 \begin{align}
-T_{persistence} = \tau_{a} \ln(\frac{g_a}{g_a - g_w (w_{self}  - w_{next})}) \label{eq:simple_bcpnn_persistence_time}
+T_{persistence} = \tau_{a} \ln \left(\frac{g_a}{g_a - g_w (w_{self}  - w_{next})} \right) \label{eq:simple_bcpnn_persistence_time}
 \end{align}
 
+We show comparisons between this theory and simulations in equation \ref{fig:simple_bcpnn_comparison} we will now elaborate why the curves look the way they do.
+
+\textbf{Adaptation current time constant} $\mathbf{\tau_{a}}$ \\
+We explain here how the persistence time dynamics depend on $\tau_a$ the time constant of the adaptation current. A priori, the longer the adaptation time constant the longer it will take to the adaptation time current to erode the pattern. From equation \ref{eq:simple_bcpnn_persistence_time} we can observe that the relationship is linear which is exactly what we get in figure \ref{fig:simple_bcpnn_comparison} a).  
+
+\textbf{Adaptation current gain $g_a$}
+The adaptation time current is actually a limiting factor in the succesfull recall of a sequence. If the adaptation current is not big enough that it can overcome the difference between the self-excitatory current and the inhibitory current of the next element then the system will get stuck forever in the same state, in other words, the system of erosion will not work. Therefore we need the value to be bigger the difference in weights multiplied by the gains. Once we have overcome this threshold the behavior becomes obvious, the bigger the gain of the adaptation current the faster this current will overcome the self-excitatory one and therefore the persistence time will be bigger. We illustrate this behavior in figure \ref{fig:simple_bcpnn_comparison}. An important point regarding the behavior of the persistence is to be noted here, it presents a singularity. From equation \ref{eq:simple_bcpnn_persistence_time} denominator we can see that the expression will diverge when $g_a = g_w (w_{self} - w_{next})$ and we can see that behavior reflected accurately in the graph. This divergences are important because 
+
+\begin{figure}[H]%
+    \centering
+    \subfigure[$\tau_a$]{{\includegraphics[width=5cm]{simple_bcpnn_tau_a.pdf} }}%
+    \qquad
+    \subfigure[$g_a$]{{\includegraphics[width=5cm]{simple_bcpnn_g_a.pdf} }}%
+    \hfill
+    \subfigure[$g_w$]{{\includegraphics[width=5cm]{simple_bcpnn_g_w.pdf} }}%
+     \qquad
+    \subfigure[$w_{next}$]{{\includegraphics[width=5cm]{simple_bcpnn_w_next.pdf} }}%
+    \caption{Persistence time relationship with the parameters. a) We can appreciate that the persistence time grows linearly with $\tau_a$, the adaptation current time constant. b)   }
+    \label{fig:simple_bcpnn_comparison}%
+\end{figure}
 
 \subsubsection{Learning Properties}
 

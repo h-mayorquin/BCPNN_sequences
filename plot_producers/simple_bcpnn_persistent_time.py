@@ -12,7 +12,7 @@ import seaborn as sns
 
 np.set_printoptions(suppress=True, precision=2)
 
-sns.set(font_scale=3.0)
+sns.set(font_scale=3.5)
 sns.set_style(style='white')
 
 from network import Protocol, BCPNNModular, NetworkManager, BCPNNPefect
@@ -53,6 +53,8 @@ w_next = -0.1
 w_rest = -0.2
 
 
+markersize = 32
+linewdith = 10
 
 #######
 # tau a
@@ -107,16 +109,16 @@ T_recall_theorical_tau_a = simple_bcpnn_theo_recall_time(tau_a_vector, g_a, g_w_
 
 fig1 = plt.figure(figsize=(16, 12))
 ax1 = fig1.add_subplot(111)
-ax1.plot(tau_a_vector, T_recall_theorical_tau_a, '-', label=r'Theory')
-ax1.plot(tau_a_vector, T_recall_vector_tau_a, '*', markersize=20, label=r'Simulation')
+ax1.plot(tau_a_vector, T_recall_theorical_tau_a, '-', lw=linewdith, label=r'Theory')
+ax1.plot(tau_a_vector, T_recall_vector_tau_a, '*', markersize=markersize, label=r'Simulation')
 
 ax1.axhline(0, ls='--', color='black')
 ax1.axvline(0, ls='--', color='black')
 ax1.set_xlabel(r'$\tau_{a}$ (ms)')
-ax1.set_ylabel(r'$T_{recall}$ (s)')
+ax1.set_ylabel(r'$T_{persistence}$ (s)')
 ax1.legend()
 
-fig1.savefig('./plot_producers/simple_bcpnn_tau_a', frameon=False, dpi=110, bbox_inches='tight')
+fig1.savefig('./plot_producers/simple_bcpnn_tau_a.pdf', frameon=False, dpi=110, bbox_inches='tight')
 
 ###########
 # g_a
@@ -165,8 +167,8 @@ singularity = g_w_ampa * (w_self - w_next)
 fig2 = plt.figure(figsize=(16, 12))
 ax2 = fig2.add_subplot(111)
 
-ax2.plot(g_a_vector, T_recall_theoretical_g_a, '-', label=r'Theory')
-ax2.plot(g_a_vector, T_recall_vector_g_a, '*', markersize=20,  label=r'Simulation')
+ax2.plot(g_a_vector, T_recall_theoretical_g_a, '-',  lw=linewdith, label=r'Theory')
+ax2.plot(g_a_vector, T_recall_vector_g_a, '*', markersize=markersize,  label=r'Simulation')
 ax2.axhline(0, ls='--', color='black')
 ax2.axvline(0, ls='--', color='black')
 ax2.axvline(singularity, ls='-', color='red', label=r'$g_{w}(w_{self} - w_{next})$')
@@ -175,7 +177,7 @@ ax2.set_xlabel(r'$g_{a}$')
 ax2.set_ylabel(r'$T_{persistence}$ (s)')
 ax2.legend();
 
-fig2.savefig('./plot_producers/simple_bcpnn_g_a', frameon=False, dpi=110, bbox_inches='tight')
+fig2.savefig('./plot_producers/simple_bcpnn_g_a.pdf', frameon=False, dpi=110, bbox_inches='tight')
 
 ############
 # g_w
@@ -225,8 +227,8 @@ T_recall_theorical_g_w_ampa = simple_bcpnn_theo_recall_time(tau_a, g_a, g_w_ampa
 fig3 = plt.figure(figsize=(16, 12))
 
 ax3 = fig3.add_subplot(111)
-ax3.plot(g_w_ampa_vector, T_recall_theorical_g_w_ampa, '-', label=r'Theory')
-ax3.plot(g_w_ampa_vector, T_recall_vector_g_w, '*', markersize=20, label=r'Simulation')
+ax3.plot(g_w_ampa_vector, T_recall_theorical_g_w_ampa, '-', lw=linewdith, label=r'Theory')
+ax3.plot(g_w_ampa_vector, T_recall_vector_g_w, '*', markersize=markersize, label=r'Simulation')
 ax3.axhline(0, ls='--', color='black')
 ax3.axvline(0, ls='--', color='black')
 ax3.axvline(g_w_max, ls='-', color='red', label=r'$\frac{g_{a}}{(w_{self} - w_{next})}$')
@@ -234,7 +236,7 @@ ax3.set_xlabel(r'$g_{w}$')
 ax3.set_ylabel(r'$T_{persistence}$ (s)')
 ax3.legend();
 
-fig3.savefig('./plot_producers/simple_bcpnn_g_w', frameon=False, dpi=110, bbox_inches='tight')
+fig3.savefig('./plot_producers/simple_bcpnn_g_w.pdf', frameon=False, dpi=110, bbox_inches='tight')
 
 ###########
 # w_next
@@ -285,8 +287,8 @@ T_recall_theorical_w_next = simple_bcpnn_theo_recall_time(tau_a, g_a, g_w_ampa, 
 fig4 = plt.figure(figsize=(16, 12))
 
 ax4 = fig4.add_subplot(111)
-ax4.plot(w_next_vector, T_recall_theorical_w_next, '*-', label=r'Theory')
-ax4.plot(w_next_vector, T_recall_vector_w_next, '*-', markersize=18, label=r'Simulation')
+ax4.plot(w_next_vector, T_recall_theorical_w_next, '-', lw=linewdith, label=r'Theory')
+ax4.plot(w_next_vector, T_recall_vector_w_next, '*', markersize=markersize, label=r'Simulation')
 
 ax4.axhline(0, ls='--', color='black')
 ax4.axvline(0, ls='--', color='black')
@@ -296,7 +298,7 @@ ax4.axvline(w_next_max, ls='-', color='red', label=r'$w_{self}$')
 ax4.axvline(w_next_min, ls='-', color='red', label=r'$w_{self} - \frac{g_a}{g_w}$')
 ax4.legend()
 
-fig4.savefig('./plot_producers/simple_bcpnn_w_next', frameon=False, dpi=110, bbox_inches='tight')
+fig4.savefig('./plot_producers/simple_bcpnn_w_next.pdf', frameon=False, dpi=110, bbox_inches='tight')
 
 
 plt.close()
