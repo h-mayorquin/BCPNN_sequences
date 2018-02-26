@@ -159,32 +159,38 @@ w_{ij} &= \log(\frac{p_{ij}}{p_i p_j}) \\
 \textbf{An example of learning}
 Here put a picture of how learning looks like under this scheme.
 
-\textbf{The training protocol}
-Here we describe the training protocol. The first to note is that we train the neural network by clamping a given set of units in the order of a given sequence for a given time. More specifically a training protocol is characterized by the following quantities. First there is the \textbf{training time} for a given element of the sequence, that is, the time that element remains activated. 
+\textbf{The training protocol:} \\
+Here we describe the training protocol. The first to note is that we train the neural network by clamping a given set of units in the order of a given sequence for a given time. More specifically a training protocol is characterized by the following quantities. First there is the \textbf{training time} for a given element of the sequence, that is, the time that element remains activated. It may well be that the an element of the sequences does not follow the other immediately, in order to account for this possibility we have the \textbf{inter pulse interval (IPS)} which is just the time elapsed between a pattern and its successor. It is also the case that a given sequence of elements is often presented more than once, we call \textbf{epoch} to a particular instance of a sequence pretension. Finally, we usually leave some time between each of the epochs during the presentation of the training protocol, this is know as the \textbf{inter sequence interval (ISI)}. We present a schematic of the training protocol in figure \ref{fig:training_protocol}.
 
 \begin{figure}[H]
 \centering
 \includegraphics[scale=1.40]{protocol.pdf}
 \caption{The training protocol. IPI stands for inter pulse interval and ISI for inter sequence interval. Explanations in the text.}
-\label{fig:bcpnn_simple_network}
+\label{fig:training_protocol}
 \end{figure}
 
+Now that we have the training protocol we will study how the different weights vary with the training protocol parameters. We ran the training protocol with a given set of parameters and we examine the values of the connectivity matrix at the end of the training protocol. We characterized the $w_{self}$ as the self-connection of unit $2$ with itself, $w_{next}$ on the other hand is given by the weight of the connection between units $2$ and $3$. Finally we calculated $w_{rest}$ as the average of the connections weights from unit two to all the other units. We studied the effects on learning of the training time, the number of epochs, the number of patterns and finally the number of units.
 
+\textbf{Training time:} in figure \ref{fig:simple_bcpnn_learning} a) we show the results of learning with different training times on the connectivity matrix. Using the Bayesian interpretation of the learning rule we can explain why the $w_{self}$ is increasing with the training time. The longer the training time the longer the unit is activated which means the co-activation of the unit with itself is bigger, which in turn leads to a bigger weight. Using the reverse of this statement is easy to see why $w_{next}$ and $w_{rest}$ are decreasing. The BCPNN learning rules weights the co-activation of the units against their individual activation. As the training time grows for different units the latter becomes bigger and bigger and therefore the decreasing effect on weights that we observe on the graph.  
 
+\textbf{Epochs}: in figure \ref{fig:simple_bcpnn_learning} b) we show the results that training with different number of epochs has on the connectivity matrix. This graph is better understood in terms of the dynamics of learning reaching to their natural equilibrium. The co-activation to independent activation ratio is dynamical process that follows the equations, the longer the dynamics run the closer this dynamic approaches its steady-state behavior. In the case of $w_{self}$ and $w_{next}$ there are definitive ratios of activation given by the dynamic and the system converges to it. The $w_{rest}$ quantity however, does not. This reflects the fact that the units never activate together and the learning rule keeps accumulating evidence of it. 
 
-\textbf{Training Time}
+\textbf{Number of patterns}: in figure \ref{fig:simple_bcpnn_learning} c) we depict the outcome of having a different number of patterns in the sequence on the connectivity matrix. 
+
+\textbf{Number of minicolumns} in figure \ref{fig:simple_bcpnn_learning} d) we illustrate the effects of the number of units on the connectivity matrix. 
+
 
 
 \begin{figure}[H]%
     \centering
-    \subfigure[$\tau_a$]{{\includegraphics[width=5cm]{simple_bcpnn_training_time.pdf} }}%
+    \subfigure[Training time]{{\includegraphics[width=5cm]{simple_bcpnn_training_time.pdf} }}%
     \qquad
-    \subfigure[$g_a$]{{\includegraphics[width=5cm]{simple_bcpnn_epochs.pdf} }}%
+    \subfigure[Epochs]{{\includegraphics[width=5cm]{simple_bcpnn_epochs.pdf} }}%
     \hfill
-    \subfigure[$g_w$]{{\includegraphics[width=5cm]{simple_bcpnn_patterns.pdf} }}%
+    \subfigure[Number of patterns]{{\includegraphics[width=5cm]{simple_bcpnn_patterns.pdf} }}%
      \qquad
-    \subfigure[$w_{next}$]{{\includegraphics[width=5cm]{simple_bcpnn_minicolumns.pdf} }}%
-    \caption{Dynamics of weight learning.   }
+    \subfigure[Number of units]{{\includegraphics[width=5cm]{simple_bcpnn_minicolumns.pdf} }}%
+    \caption{Dynamics of weight learning. a) effects of the training time on learning. b) effects of the number of epochs on training. c) effects of the number of patterns on learning. d) effects of the number of units on learning. See text for explanation.}
     \label{fig:simple_bcpnn_learning}%
 \end{figure}
 

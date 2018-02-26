@@ -193,7 +193,7 @@ ax3.plot(minicolumns_vector, w_next_vector_minicolumns, '*-', lw=linewidth, mark
 ax3.plot(minicolumns_vector, w_rest_vector_minicolumns, '*-', lw=linewidth, markersize=markersize, label=r'$w_{rest}$')
 
 
-ax3.set_xlabel('Minicolumns')
+ax3.set_xlabel('Number of units')
 ax3.set_ylabel('Weight')
 
 ax3.axhline(0, ls='--', color='black')
