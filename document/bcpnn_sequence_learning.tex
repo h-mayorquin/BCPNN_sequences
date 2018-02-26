@@ -140,18 +140,53 @@ The adaptation time current is actually a limiting factor in the succesfull reca
     \label{fig:simple_bcpnn_comparison}%
 \end{figure}
 
+\textbf{Weight Gain}
+
+
+\textbf{Next weight value}
+
 \subsubsection{Learning Properties}
+Once we know the dynamics of the system given a certain matrix the natural question to consider is whether we can learn the weight matrix. As described in \cite{sandberg2002bayesian} with the help of traces we can add on-line learning capabilities to the BCPNN neural network. 
 
-
-\begin{align*}
-\tau_m \dfrac{s_i}{dt} &= \beta_i + \sum_{j} w_{ij} o_j + a_i - s_i \\
-o_i &= \frac{exp(s_i)}{\sum_j exp(s_j)} \\
-\tau_z \dfrac{dz_i}{dt} &= o_{i, k} - z_{i} \\
-\tau_p \dfrac{dp_i}{dt} &= z_i(t) - p_i(t)  \\  
-\tau_p \dfrac{dp_{ij}}{dt} &= z_i(t) z_j(t) - p_{ij}(t)\\
+\begin{align}
+\tau_z \dfrac{dz_i}{dt} &= o_i - z_i \\
+\tau_p \dfrac{dp_i}{dt} &= z_i - p_i  \\  
+\tau_p \dfrac{dp_{ij}}{dt} &= z_i z_j - p_{ij}\\
 w_{ij} &= \log(\frac{p_{ij}}{p_i p_j}) \\
 \beta_i &= \log(p_i) 
-\end{align*}
+\end{align}
+
+\textbf{An example of learning}
+Here put a picture of how learning looks like under this scheme.
+
+\textbf{The training protocol}
+Here we describe the training protocol. The first to note is that we train the neural network by clamping a given set of units in the order of a given sequence for a given time. More specifically a training protocol is characterized by the following quantities. First there is the \textbf{training time} for a given element of the sequence, that is, the time that element remains activated. 
+
+\begin{figure}[H]
+\centering
+\includegraphics[scale=1.40]{protocol.pdf}
+\caption{The training protocol. IPI stands for inter pulse interval and ISI for inter sequence interval. Explanations in the text.}
+\label{fig:bcpnn_simple_network}
+\end{figure}
+
+
+
+
+\textbf{Training Time}
+
+
+\begin{figure}[H]%
+    \centering
+    \subfigure[$\tau_a$]{{\includegraphics[width=5cm]{simple_bcpnn_training_time.pdf} }}%
+    \qquad
+    \subfigure[$g_a$]{{\includegraphics[width=5cm]{simple_bcpnn_epochs.pdf} }}%
+    \hfill
+    \subfigure[$g_w$]{{\includegraphics[width=5cm]{simple_bcpnn_patterns.pdf} }}%
+     \qquad
+    \subfigure[$w_{next}$]{{\includegraphics[width=5cm]{simple_bcpnn_minicolumns.pdf} }}%
+    \caption{Dynamics of weight learning.   }
+    \label{fig:simple_bcpnn_learning}%
+\end{figure}
 
 
 \section{The problem Of Complex Sequences}
