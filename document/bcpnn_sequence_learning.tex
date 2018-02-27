@@ -152,9 +152,18 @@ Once we know the dynamics of the system given a certain matrix the natural quest
 \tau_z \dfrac{dz_i}{dt} &= o_i - z_i \\
 \tau_p \dfrac{dp_i}{dt} &= z_i - p_i  \\  
 \tau_p \dfrac{dp_{ij}}{dt} &= z_i z_j - p_{ij}\\
-w_{ij} &= \log(\frac{p_{ij}}{p_i p_j}) \\
+w_{ij} &= \log(\frac{p_{ij}}{p_i p_j}) \label{eq:bcpnn_weight_update} \\
 \beta_i &= \log(p_i) 
 \end{align}
+
+We can understand the Bayesian nature of this learning rule by focusing our attention in equation \ref{eq:bcpnn_weight_update}. The argument of the logarithm weights co-activations of the two units against the base rate activation of the units multiplied by each other. When that two units are activated at the same time the co-activation $p_{ij}$ of the units increases, if this is bigger than the  
+
+\begin{figure}[H]
+\centering
+\includegraphics[scale=0.30]{traces_example.pdf}
+\caption{In red the co-activation of the functions.}
+\label{fig:traces_example}
+\end{figure}
 
 \textbf{An example of learning}
 Here put a picture of how learning looks like under this scheme.
@@ -175,7 +184,8 @@ Now that we have the training protocol we will study how the different weights v
 
 \textbf{Epochs}: in figure \ref{fig:simple_bcpnn_learning} b) we show the results that training with different number of epochs has on the connectivity matrix. This graph is better understood in terms of the dynamics of learning reaching to their natural equilibrium. The co-activation to independent activation ratio is dynamical process that follows the equations, the longer the dynamics run the closer this dynamic approaches its steady-state behavior. In the case of $w_{self}$ and $w_{next}$ there are definitive ratios of activation given by the dynamic and the system converges to it. The $w_{rest}$ quantity however, does not. This reflects the fact that the units never activate together and the learning rule keeps accumulating evidence of it. 
 
-\textbf{Number of patterns}: in figure \ref{fig:simple_bcpnn_learning} c) we depict the outcome of having a different number of patterns in the sequence on the connectivity matrix. 
+\textbf{Number of patterns}: in figure \ref{fig:simple_bcpnn_learning} c) we depict the outcome that having a different number of patterns in the sequence has on the connectivity matrix. In terms of the Bayesian nature of the learning rule this graphs can be explained in the following way. When we increase the number of patterns we are making the overall probability space bigger (number of possible ways in which the network could possible be). If we remember  
+
 
 \textbf{Number of minicolumns} in figure \ref{fig:simple_bcpnn_learning} d) we illustrate the effects of the number of units on the connectivity matrix. 
 
