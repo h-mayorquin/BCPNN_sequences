@@ -15,7 +15,7 @@ np.set_printoptions(suppress=True, precision=2)
 sns.set(font_scale=3.5)
 sns.set_style(style='white')
 
-from network import Protocol, BCPNNModular, NetworkManager, BCPNNPefect
+from network import Protocol, BCPNNModular, NetworkManager, BCPNNPerfect
 from plotting_functions import plot_weight_matrix, plot_state_variables_vs_time, plot_winning_pattern
 from plotting_functions import plot_network_activity, plot_network_activity_angle
 from analysis_functions import calculate_recall_time_quantities, calculate_angle_from_history
@@ -82,9 +82,9 @@ std_tau_a = np.zeros_like(tau_a_vector)
 for index, tau_a_ in enumerate(tau_a_vector):
 
     # Build the network
-    nn = BCPNNPefect(hypercolumns, minicolumns, g_w_ampa=g_w_ampa, g_w=g_w, g_a=g_a, tau_a=tau_a_,
+    nn = BCPNNPerfect(hypercolumns, minicolumns, g_w_ampa=g_w_ampa, g_w=g_w, g_a=g_a, tau_a=tau_a_,
                       sigma=sigma, G=G,
-                    z_transfer=False, diagonal_zero=False, strict_maximum=True, perfect=True)
+                      z_transfer=False, diagonal_zero=False, strict_maximum=True, perfect=True)
 
     # Build the manager
     manager = NetworkManager(nn=nn, dt=dt, values_to_save=values_to_save)
@@ -139,9 +139,9 @@ std_g_a = np.zeros_like(g_a_vector)
 
 for index, g_a_ in enumerate(g_a_vector):
     # Build the network
-    nn = BCPNNPefect(hypercolumns, minicolumns, g_w_ampa=g_w_ampa, g_w=g_w, g_a=g_a_, tau_a=tau_a,
-                     sigma=sigma, G=G,
-                     z_transfer=False, diagonal_zero=False, strict_maximum=True, perfect=True)
+    nn = BCPNNPerfect(hypercolumns, minicolumns, g_w_ampa=g_w_ampa, g_w=g_w, g_a=g_a_, tau_a=tau_a,
+                      sigma=sigma, G=G,
+                      z_transfer=False, diagonal_zero=False, strict_maximum=True, perfect=True)
 
     # Build the manager
     manager = NetworkManager(nn=nn, dt=dt, values_to_save=values_to_save)
@@ -200,9 +200,9 @@ std_g_w = np.zeros_like(g_w_ampa_vector)
 for index, g_w_ampa_ in enumerate(g_w_ampa_vector):
 
     # Build the network
-    nn = BCPNNPefect(hypercolumns, minicolumns, g_w_ampa=g_w_ampa_, g_w=g_w, g_a=g_a, tau_a=tau_a,
+    nn = BCPNNPerfect(hypercolumns, minicolumns, g_w_ampa=g_w_ampa_, g_w=g_w, g_a=g_a, tau_a=tau_a,
                       sigma=sigma, G=G,
-                    z_transfer=False, diagonal_zero=False, strict_maximum=True, perfect=True)
+                      z_transfer=False, diagonal_zero=False, strict_maximum=True, perfect=True)
 
     # Build the manager
     manager = NetworkManager(nn=nn, dt=dt, values_to_save=values_to_save)
@@ -260,9 +260,9 @@ std_w_next = np.zeros_like(w_next_vector)
 
 for index, w_next_ in enumerate(w_next_vector):
     # Build the network
-    nn = BCPNNPefect(hypercolumns, minicolumns, g_w_ampa=g_w_ampa, g_w=g_w, g_a=g_a, tau_a=tau_a,
-                     sigma=sigma, G=G,
-                     z_transfer=False, diagonal_zero=False, strict_maximum=True, perfect=True)
+    nn = BCPNNPerfect(hypercolumns, minicolumns, g_w_ampa=g_w_ampa, g_w=g_w, g_a=g_a, tau_a=tau_a,
+                      sigma=sigma, G=G,
+                      z_transfer=False, diagonal_zero=False, strict_maximum=True, perfect=True)
 
     # Build the manager
     manager = NetworkManager(nn=nn, dt=dt, values_to_save=values_to_save)

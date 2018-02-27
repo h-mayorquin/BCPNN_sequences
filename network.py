@@ -697,9 +697,7 @@ class Protocol:
         return sequences, p_array, sequence_array, overlap_array
 
 
-
-
-class BCPNNPefect:
+class BCPNNPerfect:
     def __init__(self, hypercolumns, minicolumns, beta=None, w=None, G=1.0, tau_m=0.020, g_w=1.0, g_w_ampa=1.0, g_beta=1,
                  tau_z_pre=0.150, tau_z_post=0.005, tau_z_pre_ampa=0.005, tau_z_post_ampa=0.005, tau_p=10.0, tau_k=0.010,
                  tau_a=2.70, g_a=97.0, g_I=10.0, p=1.0, k=0.0, sigma=1.0, epsilon=1e-20, k_inner=False, prng=np.random,
@@ -755,9 +753,9 @@ class BCPNNPefect:
 
         # NMDA values
         self.i_nmda = np.zeros(self.n_units)
-        self.z_pre = np.ones(self.n_units) * 1.0 / self.minicolumns
-        self.z_post = np.ones(self.n_units) * 1.0 / self.minicolumns
-        self.z_co = np.ones((self.n_units, self.n_units)) * 1.0 / (self.minicolumns ** 2)
+        self.z_pre = np.zeros(self.n_units) * 1.0 / self.minicolumns
+        self.z_post = np.zeros(self.n_units) * 1.0 / self.minicolumns
+        self.z_co = np.zeros((self.n_units, self.n_units)) * 1.0 / (self.minicolumns ** 2)
         self.p_pre = np.ones(self.n_units) * 1.0 / self.minicolumns
         self.p_post = np.ones(self.n_units) * 1.0 / self.minicolumns
         self.p_co = np.ones((self.n_units, self.n_units)) * 1.0 / (self.minicolumns ** 2)
@@ -765,9 +763,9 @@ class BCPNNPefect:
 
         # Ampa values
         self.i_ampa = np.zeros(self.n_units)
-        self.z_pre_ampa = np.ones(self.n_units) * 1.0 / self.minicolumns
-        self.z_post_ampa = np.ones(self.n_units) * 1.0 / self.minicolumns
-        self.z_co_ampa = np.ones((self.n_units, self.n_units)) * 1.0 / (self.minicolumns ** 2)
+        self.z_pre_ampa = np.zeros(self.n_units) * 1.0 / self.minicolumns
+        self.z_post_ampa = np.zeros(self.n_units) * 1.0 / self.minicolumns
+        self.z_co_ampa = np.zeros((self.n_units, self.n_units)) * 1.0 / (self.minicolumns ** 2)
         self.p_pre_ampa = np.ones(self.n_units) * 1.0 / self.minicolumns
         self.p_post_ampa = np.ones(self.n_units) * 1.0 / self.minicolumns
         self.p_co_ampa = np.ones((self.n_units, self.n_units)) * 1.0 / (self.minicolumns ** 2)
@@ -800,18 +798,18 @@ class BCPNNPefect:
 
         # NMDA values
         self.i_nmda = np.zeros(self.n_units)
-        self.z_pre = np.ones(self.n_units) * 1.0 / self.minicolumns
-        self.z_post = np.ones(self.n_units) * 1.0 / self.minicolumns
-        self.z_co = np.ones((self.n_units, self.n_units)) * 1.0 / (self.minicolumns ** 2)
+        self.z_pre = np.zeros(self.n_units) * 1.0 / self.minicolumns
+        self.z_post = np.zeros(self.n_units) * 1.0 / self.minicolumns
+        self.z_co = np.zeros((self.n_units, self.n_units)) * 1.0 / (self.minicolumns ** 2)
         self.p_pre = np.ones(self.n_units) * 1.0 / self.minicolumns
         self.p_post = np.ones(self.n_units) * 1.0 / self.minicolumns
         self.p_co = np.ones((self.n_units, self.n_units)) * 1.0 / (self.minicolumns ** 2)
 
         # Ampa values
         self.i_ampa = np.zeros(self.n_units)
-        self.z_pre_ampa = np.ones(self.n_units) * 1.0 / self.minicolumns
-        self.z_post_ampa = np.ones(self.n_units) * 1.0 / self.minicolumns
-        self.z_co_ampa = np.ones((self.n_units, self.n_units)) * 1.0 / (self.minicolumns ** 2)
+        self.z_pre_ampa = np.zeros(self.n_units) * 1.0 / self.minicolumns
+        self.z_post_ampa = np.zeros(self.n_units) * 1.0 / self.minicolumns
+        self.z_co_ampa = np.zeros((self.n_units, self.n_units)) * 1.0 / (self.minicolumns ** 2)
         self.p_pre_ampa = np.ones(self.n_units) * 1.0 / self.minicolumns
         self.p_post_ampa = np.ones(self.n_units) * 1.0 / self.minicolumns
         self.p_co_ampa = np.ones((self.n_units, self.n_units)) * 1.0 / (self.minicolumns ** 2)

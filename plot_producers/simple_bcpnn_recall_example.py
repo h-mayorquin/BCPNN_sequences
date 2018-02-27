@@ -13,7 +13,7 @@ np.set_printoptions(suppress=True, precision=2)
 sns.set(font_scale=3.0)
 sns.set_style(style='white')
 
-from network import Protocol, BCPNNModular, NetworkManager, BCPNNPefect
+from network import Protocol, BCPNNModular, NetworkManager, BCPNNPerfect
 from plotting_functions import plot_weight_matrix, plot_state_variables_vs_time, plot_winning_pattern
 from plotting_functions import plot_network_activity, plot_network_activity_angle
 from analysis_functions import calculate_recall_time_quantities, calculate_angle_from_history
@@ -53,7 +53,7 @@ n_patterns = 10
 dt = 0.001
 values_to_save = ['o', 's', 'a', 'i_ampa']
 
-nn = BCPNNPefect(hypercolumns, minicolumns, g_w_ampa=g_w_ampa, g_w=g_w, g_a=g_a, tau_a=tau_a,
+nn = BCPNNPerfect(hypercolumns, minicolumns, g_w_ampa=g_w_ampa, g_w=g_w, g_a=g_a, tau_a=tau_a,
                   sigma=sigma, G=G,
                   z_transfer=False, diagonal_zero=False, strict_maximum=True, perfect=True)
 
