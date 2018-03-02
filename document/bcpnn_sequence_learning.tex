@@ -42,6 +42,12 @@ The other papers
 \subsection{The BCPNN}
 Explanation of what is the BCPNN, where does it come from, and some applications. 
 
+\begin{figure}[H]
+\centering
+\includegraphics[scale=0.30]{bcpnn_probabiltiies.pdf}
+\caption{A schematic of how the BCPNN learning rules associates weights to different probability scenarios.}
+\label{fig:bcpnn_probabilities}
+\end{figure}
 
 
 
@@ -83,7 +89,7 @@ First the system achieves fixation by the means of the self-excitatory current d
 
 After a particular unit is activated the adaptation current in equations \ref{eq:simple_bcpnn_adaptation} and \ref{eq:simple_bcpnn}  will be the mechanism responsible for the erosion of the pattern. Once a unit is activate for long enough and in the right parameter regime the adaptation current will surpass the self-excitatory current and the pattern will be suppressed. On this light, the time a particular unit remains activated is mostly dependent on the parameters that determine the dynamics of the adaptation and self-excitatory currents and the competitive balance between them. We will make this last relationship quantitative further down in this document. 
 
-Finally, this system would jump randomly among the states if it were not for a proper mechanism of biased transition. For this particular system this is implemented as differential inhibitory weights (illustrated in figure \ref{fig:bcpnn_simple_network} as different widths for the inhibitory connections) that become more and more inhibitory the farther two units are in the sequence. This ensures that once the adaptation currents for a unit becomes big enough the next unit which is the less inhibited one wins the competition and gets prompted to activation by the winner-takes-all mechanism.  
+Finally, this system would jump randomly among the states if it were not for a proper mechanism of biased transition. This is accomplished with differential inhibitory weights (illustrated in figure \ref{fig:bcpnn_simple_network} as different widths for the blue inhibitory connections) that become more and more inhibitory the farther two units are in the sequence. This ensures that once the adaptation currents for a unit becomes big enough the next unit which is the less inhibited one wins the competition and gets prompted to activation by the winner-takes-all mechanism.  
 
 \begin{align}
 \tau_m \dfrac{ds_i}{dt} &= g_{beta}\beta_i + g_{w}\sum_{j} w_{ij} o_j + g_a a_i - s_i \label{eq:simple_bcpnn} \\ 
@@ -91,7 +97,7 @@ o_i &=  \delta_{i, argmax(s)} \label{eq:simple_bcpnn_max} \\
 \dfrac{da_i}{dt} &= o_i - a_i \label{eq:simple_bcpnn_adaptation}
 \end{align}
 
-In order to illustrate the described phenomena of how the dynamics of the system work together we show an example of a successful sequence recall in figure \ref{fig:bcpnn_simple_recall}. In the recall process we cue the first unit of the sequence by clamping it by a short period of time ($\sim 100ms$). We then let the system evolve on its own and given the right combination of parameters a sequence is effectively recalled if all the units are activated in the expected order. 
+In order to illustrate how the dynamics of the system work together we show an example of a successful sequence recall in figure \ref{fig:bcpnn_simple_recall}. In the recall process we cue the first unit of the sequence by clamping it by a short period of time ($\sim 100ms$). We then let the system evolve on its own and, given the right combination of parameters, a sequence is effectively recalled if all the units that conform the pattern are activated in the expected order. 
 
 It is important to note that in this case we utilized a tailor-made connectivity matrix to clarify the relationship between the different component of the dynamics. Further down we will show how the same effect can be effectively achieved with a matrix that emerges from a self-organized learning process.  
 
@@ -102,10 +108,12 @@ It is important to note that in this case we utilized a tailor-made connectivity
 \label{fig:bcpnn_simple_recall}
 \end{figure}
 
-We will now proceed to characterise the properties of the simplified version of the BCPNN. We will do this in two steps, first we will explain the recall properties of the system. This is mainly an answer to the question of which parameters of the network guarantee successful recall. Given the simplicity of the system it turns out that this can be done simultaneously with the characterization of the persistence time, this is, the length of time that a particular unit becomes activated.  Second, we will characterize the learning learning properties of the system, that is, if we subject the system to different presentations of the sequence under the BCPNN plasticity rule, in which conditions the weights learneed are such that the systme recall succesfull?
+
+We will now proceed to characterize the properties of the simplified version of the BCPNN. We will do this in two steps, first we will explain the recall properties of the system and then we will proceed to describe the learning rule and its dynamics. One of the most important quantities of sequence recall network is the \textbf{persistence time.} of a a state. It turns out than in this simple system by determining the recall time with regards to certain parameters we can explain both how the network works and when the recall is carried out successfully.
+
 
 \subsubsection{Recall properties}
-If we have system with only one type of connectivity, and perfect soft-max selectivity one state will be suppressed in favor of the other as soon as the support of the second state is bigger. In more detail, if we start with a system where the first unit is activated its own support will be $s_1 = g w_{self} - a(t)$ where a is the adaptation time. Where the adaptation current is increasing in time for as long as the first unit is activated. On the other hand the second unit is receiving a constant current to its support $s_2 = g w_{next}$, if this process continues by continuity there will be a point when:
+If we have system with only one type of connectivity, and winner-takes-all selectivity one state will be suppressed in favor of the other as soon as the support of the second state is bigger. In more detail, if we start with a system where the first unit is activated its own support will be $s_1 = g w_{self} - a(t)$ where a is the adaptation current which grows in time. This will continue as long as the first unit is activated and as a consequence the support for the unit will be decreasing. On the other hand the second unit is receiving a constant current to its support $s_2 = g w_{next}$, if this process continues by continuity there will be a point when the support of the first unit will be equal to that of the second:
 
 \begin{align*}
 s_1 &= s_2 \\
@@ -113,19 +121,19 @@ gw_{self} - g_{a} (1 - e^{\frac{t}{\tau_a}}) &=  g w_{next}
 \end{align*}
 
 
-Where we have substituted the proper term for adaptation. We can solve the equation equation above to obtain the persistence time:
+Where we have substituted the proper term for adaptation. We can solve for $t$ in the expression above to obtain the persistent time $T_{persistent}$:
 
 \begin{align}
 T_{persistence} = \tau_{a} \ln \left(\frac{g_a}{g_a - g_w (w_{self}  - w_{next})} \right) \label{eq:simple_bcpnn_persistence_time}
 \end{align}
 
-We show comparisons between this theory and simulations in equation \ref{fig:simple_bcpnn_comparison} we will now elaborate why the curves look the way they do.
+We notice that the equation behaves linearly with regards to $\tau_a$ and logarithmically with regards to $g_a$, $g_w$, $w{self}$ $w_{next}$. Even more importantly, certain combinations of the latter parameters will give raise to singularity points. This is important because close to this values the persistence time can be varied greatly with small variations in the respective parameters. In other words we have a wide dynamical variability in $T_{persistence}$ as in \cite{murray2017learning}. We proceed now to describe the scaling for each of the parameters in a more concise way and to compare the theory derived above with simulations. 
 
 \textbf{Adaptation current time constant} $\mathbf{\tau_{a}}$ \\
-We explain here how the persistence time dynamics depend on $\tau_a$ the time constant of the adaptation current. A priori, the longer the adaptation time constant the longer it will take to the adaptation time current to erode the pattern. From equation \ref{eq:simple_bcpnn_persistence_time} we can observe that the relationship is linear which is exactly what we get in figure \ref{fig:simple_bcpnn_comparison} a).  
+We explain here how the persistence time dynamics depend on $\tau_a$ the time constant of the adaptation current. A priori, the longer the adaptation time constant the longer it will take to the adaptation time current to erode the pattern. From equation \ref{eq:simple_bcpnn_persistence_time} we can observe that the relationship is linear which is exactly what we get in figure \ref{fig:simple_bcpnn_comparison} a).  Note however, that the slope is not very step, that is, we do not get a lot of variation on the persistence time from variations on $\tau_a$. 
 
 \textbf{Adaptation current gain $g_a$}
-The adaptation time current is actually a limiting factor in the succesfull recall of a sequence. If the adaptation current is not big enough that it can overcome the difference between the self-excitatory current and the inhibitory current of the next element then the system will get stuck forever in the same state, in other words, the system of erosion will not work. Therefore we need the value to be bigger the difference in weights multiplied by the gains. Once we have overcome this threshold the behavior becomes obvious, the bigger the gain of the adaptation current the faster this current will overcome the self-excitatory one and therefore the persistence time will be bigger. We illustrate this behavior in figure \ref{fig:simple_bcpnn_comparison}. An important point regarding the behavior of the persistence is to be noted here, it presents a singularity. From equation \ref{eq:simple_bcpnn_persistence_time} denominator we can see that the expression will diverge when $g_a = g_w (w_{self} - w_{next})$ and we can see that behavior reflected accurately in the graph. This divergences are important because 
+The adaptation time current is actually a limiting factor in the succesfull recall of a sequence. If the adaptation current is not big enough to overcome the difference between the self-excitatory current and the current of the next element then the system will get stuck forever in the same state.  We need therefore that the value of the adaptation gain $g_a$ to be bigger the difference in weights multiplied by the weight gain $ g_w (w_{self}  - w_{next})$ which is just the denominator of the equation \ref{eq:simple_bcpnn_persistence_time}. Once we have overcome this threshold the behavior becomes obvious, the bigger the gain of the adaptation current the faster this current will overcome the self-excitatory one, as a consequence the persistence time will be smaller. We illustrate this behavior in figure \ref{fig:simple_bcpnn_comparison} b). The singularity here just reflects the fact when the adaptation is barley enough to overcome the difference in currents it takes an exponential time to actually do it. 
 
 \begin{figure}[H]%
     \centering
@@ -136,37 +144,36 @@ The adaptation time current is actually a limiting factor in the succesfull reca
     \subfigure[$g_w$]{{\includegraphics[width=5cm]{simple_bcpnn_g_w.pdf} }}%
      \qquad
     \subfigure[$w_{next}$]{{\includegraphics[width=5cm]{simple_bcpnn_w_next.pdf} }}%
-    \caption{Persistence time relationship with the parameters. a) We can appreciate that the persistence time grows linearly with $\tau_a$, the adaptation current time constant. b)   }
+    \caption{Persistence time relationship with the parameters. a) We can appreciate that the persistence time grows linearly with $\tau_a$, the adaptation current time constant. b) Here we depict the logarithimic dependence of $T_{persistence}$ on $g_a$. c) The same dependence for $g_w$. d) We illustrate here the effects of making the weight differential bigger (note that $w_{self}=1$ in this plot). }
     \label{fig:simple_bcpnn_comparison}%
 \end{figure}
 
 \textbf{Weight Gain}
-
+If we look at the denominator of equation \ref{eq:simple_bcpnn_persistence_time} we can interpret $g_w$ as an amplifier of the weight differential ($w_{self} - w_{next}$, this in turn is a proxy for the amount of current that the adaptation current has to overcome. In the light of this is not surprising the the persistence time increases with $g_w$. Moreover, once the weight differential gets amplified enough the adaptation current will take an exponential amount of time to overcome this difference given rise to a singularity as well.
 
 \textbf{Next weight value}
+In order to quantify the effects of varying $w_{next}$ we fixed the value of $w_{self}$ to $1$. With this perspective on mind, the farther $w_{next}$ is from 1 (the red line on the right) the biggest is the weight differential and using the same reasoning that we used for the effects of $g_w$ above we conclude increasing persistent time and a singularity when the difference becomes big enough (red line to the left). 
 
 \subsubsection{Learning Properties}
 Once we know the dynamics of the system given a certain matrix the natural question to consider is whether we can learn the weight matrix. As described in \cite{sandberg2002bayesian} with the help of traces we can add on-line learning capabilities to the BCPNN neural network. 
 
 \begin{align}
-\tau_z \dfrac{dz_i}{dt} &= o_i - z_i \\
-\tau_p \dfrac{dp_i}{dt} &= z_i - p_i  \\  
-\tau_p \dfrac{dp_{ij}}{dt} &= z_i z_j - p_{ij}\\
+\tau_z \dfrac{dz_i}{dt} &= o_i - z_i \label{eq:traces}\\
+\tau_p \dfrac{dp_i}{dt} &= z_i - p_i  \label{eq:traces_probability} \\  
+\tau_p \dfrac{dp_{ij}}{dt} &= z_i z_j - p_{ij} \\
 w_{ij} &= \log(\frac{p_{ij}}{p_i p_j}) \label{eq:bcpnn_weight_update} \\
 \beta_i &= \log(p_i) 
 \end{align}
 
-We can understand the Bayesian nature of this learning rule by focusing our attention in equation \ref{eq:bcpnn_weight_update}. The argument of the logarithm weights co-activations of the two units against the base rate activation of the units multiplied by each other. When that two units are activated at the same time the co-activation $p_{ij}$ of the units increases, if this is bigger than the  
+We can understand the Bayesian nature of this learning rule by focusing our attention in equation \ref{eq:bcpnn_weight_update}. The argument of the logarithm weights co-activations of the two units against the base rate activation of the units multiplied by each other. When that two units are activated at the same time the co-activation $p_{ij}$ of the units increases, if this is bigger than the  base rate of the activation of each unit multiplied ($p_i p_j$) then the weight increases, otherwise it decreases. We translate this to a problem of linking on time by using the z-traces as described in equation \ref{eq:traces} and illustrated in equation \ref{fig:traces_example}. If two units are close together in time there will be co-activation of the traces (illustrated in red) within a time scale of size $\tau_z$. Finally  we use a second low-pass filter  with longer time constant to preserve the learning for a longer time-scale $\tau_p$. 
 
 \begin{figure}[H]
 \centering
 \includegraphics[scale=0.30]{traces_example.pdf}
-\caption{In red the co-activation of the functions.}
+\caption{In red the intersection of two traces (co-activation) weighted against the base activation rate of each unit is responsible for the increase or decrease on the connectivity weight.}
 \label{fig:traces_example}
 \end{figure}
 
-\textbf{An example of learning}
-Here put a picture of how learning looks like under this scheme.
 
 \textbf{The training protocol:} \\
 Here we describe the training protocol. The first to note is that we train the neural network by clamping a given set of units in the order of a given sequence for a given time. More specifically a training protocol is characterized by the following quantities. First there is the \textbf{training time} for a given element of the sequence, that is, the time that element remains activated. It may well be that the an element of the sequences does not follow the other immediately, in order to account for this possibility we have the \textbf{inter pulse interval (IPS)} which is just the time elapsed between a pattern and its successor. It is also the case that a given sequence of elements is often presented more than once, we call \textbf{epoch} to a particular instance of a sequence pretension. Finally, we usually leave some time between each of the epochs during the presentation of the training protocol, this is know as the \textbf{inter sequence interval (ISI)}. We present a schematic of the training protocol in figure \ref{fig:training_protocol}.
@@ -178,16 +185,26 @@ Here we describe the training protocol. The first to note is that we train the n
 \label{fig:training_protocol}
 \end{figure}
 
+In order to illustrate how this looks in practice we illustrate with a successful training example in figure \ref{fig:bcpnn_simple_training_and_recall}. In this case we pass the training protocol consisting of two epochs and half a second of ISI as illustrated in b). Regarding the evolution of the weight dynamics, every time that there is a coincidence on the traces as in a) we will have a respective increase in the connectivity matrix as we see in c) marked with red shading. If the training process works properly we end up with a matrix as the one in f) which posses similar structure as the on in figure \ref{fig:bcpnn_simple_recall} d). The recall protocol consists on clamping the first pattern of the sequence for a given amount of time ($T_{cue}=100$ (ms) in this case) and then letting the dynamics of the network evolve on its own. In this case we can appreciate that every element is recalled in the correct order.
+
+\begin{figure}[H]
+\centering
+\includegraphics[scale=0.30]{bcpnn_learning_and_recall.pdf}
+\caption{An example of a successful training and recall. .}
+\label{fig:bcpnn_simple_training_and_recall}
+
+\end{figure}
+
 Now that we have the training protocol we will study how the different weights vary with the training protocol parameters. We ran the training protocol with a given set of parameters and we examine the values of the connectivity matrix at the end of the training protocol. We characterized the $w_{self}$ as the self-connection of unit $2$ with itself, $w_{next}$ on the other hand is given by the weight of the connection between units $2$ and $3$. Finally we calculated $w_{rest}$ as the average of the connections weights from unit two to all the other units. We studied the effects on learning of the training time, the number of epochs, the number of patterns and finally the number of units.
 
 \textbf{Training time:} in figure \ref{fig:simple_bcpnn_learning} a) we show the results of learning with different training times on the connectivity matrix. Using the Bayesian interpretation of the learning rule we can explain why the $w_{self}$ is increasing with the training time. The longer the training time the longer the unit is activated which means the co-activation of the unit with itself is bigger, which in turn leads to a bigger weight. Using the reverse of this statement is easy to see why $w_{next}$ and $w_{rest}$ are decreasing. The BCPNN learning rules weights the co-activation of the units against their individual activation. As the training time grows for different units the latter becomes bigger and bigger and therefore the decreasing effect on weights that we observe on the graph.  
 
 \textbf{Epochs}: in figure \ref{fig:simple_bcpnn_learning} b) we show the results that training with different number of epochs has on the connectivity matrix. This graph is better understood in terms of the dynamics of learning reaching to their natural equilibrium. The co-activation to independent activation ratio is dynamical process that follows the equations, the longer the dynamics run the closer this dynamic approaches its steady-state behavior. In the case of $w_{self}$ and $w_{next}$ there are definitive ratios of activation given by the dynamic and the system converges to it. The $w_{rest}$ quantity however, does not. This reflects the fact that the units never activate together and the learning rule keeps accumulating evidence of it. 
 
-\textbf{Number of patterns}: in figure \ref{fig:simple_bcpnn_learning} c) we depict the outcome that having a different number of patterns in the sequence has on the connectivity matrix. In terms of the Bayesian nature of the learning rule this graphs can be explained in the following way. When we increase the number of patterns we are making the overall probability space bigger (number of possible ways in which the network could possible be). If we remember  
+\textbf{Number of patterns}: in figure \ref{fig:simple_bcpnn_learning} c) we depict the outcome that having a different number of patterns in the sequence has on the connectivity matrix. In terms of the Bayesian nature of the learning rule this graphs can be explained in the following way. When we increase the number of patterns we are making the overall probability space bigger (number of possible ways in which the network could possible be). This makes the any two units co-activation every more meaningful, this is the reason why $w_{self}$ and $w_{next}$ increase. On the other hand, the network has more and more time to accumulate evidence of the lack of co-activation for the rest of the units and therefore $w_{rest}$ decreases. 
 
 
-\textbf{Number of minicolumns} in figure \ref{fig:simple_bcpnn_learning} d) we illustrate the effects of the number of units on the connectivity matrix. 
+\textbf{Number of minicolumns} in figure \ref{fig:simple_bcpnn_learning} d) we illustrate the effects of the number of units on the connectivity matrix. The reasoning is analogue to the one in the number of pattern, but the effect is more pronounced because we are making the network bigger overall. 
 
 
 
@@ -203,6 +220,10 @@ Now that we have the training protocol we will study how the different weights v
     \caption{Dynamics of weight learning. a) effects of the training time on learning. b) effects of the number of epochs on training. c) effects of the number of patterns on learning. d) effects of the number of units on learning. See text for explanation.}
     \label{fig:simple_bcpnn_learning}%
 \end{figure}
+
+
+
+\textbf{Effects of learning on the persistent time}: in terms of the dynamics of the persistence time we can sketch out how the different training regimes will affect the behavior of the former quantity. The effect of an increased training time increases the distance between $w_{self}$ and $w_{next}$, this will increase the time that it takes the  
 
 
 \section{The problem Of Complex Sequences}

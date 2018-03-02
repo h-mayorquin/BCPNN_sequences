@@ -94,12 +94,12 @@ time_recall = np.linspace(0, manager.T_total, num=o_recall.shape[0])
 if captions:
     size = 35
     aux_x = 0.05
-    aux_x2 = 0.50
+    aux_x2 = 0.52
     fig.text(aux_x, 0.93, 'a)', size=size)
     fig.text(aux_x, 0.60, 'c)', size=size)
     fig.text(aux_x, 0.30, 'd)', size=size)
     fig.text(aux_x2, 0.93, 'b)', size=size)
-    fig.text(aux_x2, 0.30, 'f)', size=size)
+    fig.text(aux_x2, 0.40, 'f)', size=size)
     # fig.text(0.5, 0.40, 'e)', size=size)
 
 gs = gridspec.GridSpec(3, 2)
@@ -159,9 +159,9 @@ fig.tight_layout()
 ##############
 # The weight matrix and recall
 ##############
-cmap = matplotlib.cm.inferno
+cmap = matplotlib.cm.inferno_r
 
-rect = [0.55, 0.10, 0.33, 0.33]
+rect = [0.58, 0.08, 0.33, 0.33]
 
 ax_conn = fig.add_axes(rect)
 #ax_conn = fig.add_subplot(gs[2, 1])
