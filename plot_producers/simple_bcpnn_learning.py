@@ -1,5 +1,3 @@
-import pprint
-import subprocess
 import sys
 sys.path.append('../')
 
@@ -12,8 +10,8 @@ import seaborn as sns
 
 from network import Protocol, NetworkManager, BCPNNPerfect
 
-run_training_time = False
-run_epochs = False
+run_training_time = True
+run_epochs = True
 run_minicolumns = True
 run_n_patterns = True
 
@@ -91,12 +89,11 @@ if run_training_time:
 
     fig1 = plt.figure(figsize=(16, 12))
     ax1 = fig1.add_subplot(111)
-    ax1.plot(training_times_vector, w_self_vector_tt, '*-', lw=linewidth, markersize=markersize, label=r'$w_{self}$')
-    ax1.plot(training_times_vector, w_next_vector_tt, '*-', lw=linewidth, markersize=markersize, label=r'$w_{next}$')
-    ax1.plot(training_times_vector, w_rest_vector_tt, '*-', lw=linewidth, markersize=markersize, label=r'$w_{rest}$')
+    ax1.plot(training_times_vector, w_self_vector_tt, 'o-', lw=linewidth, markersize=markersize, label=r'$w_{self}$')
+    ax1.plot(training_times_vector, w_next_vector_tt, 'o-', lw=linewidth, markersize=markersize, label=r'$w_{next}$')
+    ax1.plot(training_times_vector, w_rest_vector_tt, 'o-', lw=linewidth, markersize=markersize, label=r'$w_{rest}$')
 
-
-    ax1.set_xlabel('Training times (ms)')
+    ax1.set_xlabel('Training times (s)')
     ax1.set_ylabel('Weight')
 
     ax1.axhline(0, ls='--', color='black')
@@ -141,9 +138,9 @@ if run_epochs:
 
     fig2 = plt.figure(figsize=(16, 12))
     ax2 = fig2.add_subplot(111)
-    ax2.plot(epochs_vector, w_self_vector_epochs, '*-', lw=linewidth, markersize=markersize, label=r'$w_{self}$')
-    ax2.plot(epochs_vector, w_next_vector_epochs, '*-', lw=linewidth, markersize=markersize, label=r'$w_{next}$')
-    ax2.plot(epochs_vector, w_rest_vector_epochs, '*-', lw=linewidth, markersize=markersize, label=r'$w_{rest}$')
+    ax2.plot(epochs_vector, w_self_vector_epochs, 'o-', lw=linewidth, markersize=markersize, label=r'$w_{self}$')
+    ax2.plot(epochs_vector, w_next_vector_epochs, 'o-', lw=linewidth, markersize=markersize, label=r'$w_{next}$')
+    ax2.plot(epochs_vector, w_rest_vector_epochs, 'o-', lw=linewidth, markersize=markersize, label=r'$w_{rest}$')
 
     ax2.set_xlabel('Epochs')
     ax2.set_ylabel('Weight')
@@ -189,9 +186,9 @@ if run_minicolumns:
 
     fig3 = plt.figure(figsize=(16, 12))
     ax3 = fig3.add_subplot(111)
-    ax3.plot(minicolumns_vector, w_self_vector_minicolumns, '*-', lw=linewidth, markersize=markersize, label=r'$w_{self}$')
-    ax3.plot(minicolumns_vector, w_next_vector_minicolumns, '*-', lw=linewidth, markersize=markersize, label=r'$w_{next}$')
-    ax3.plot(minicolumns_vector, w_rest_vector_minicolumns, '*-', lw=linewidth, markersize=markersize, label=r'$w_{rest}$')
+    ax3.plot(minicolumns_vector, w_self_vector_minicolumns, 'o-', lw=linewidth, markersize=markersize, label=r'$w_{self}$')
+    ax3.plot(minicolumns_vector, w_next_vector_minicolumns, 'o-', lw=linewidth, markersize=markersize, label=r'$w_{next}$')
+    ax3.plot(minicolumns_vector, w_rest_vector_minicolumns, 'o-', lw=linewidth, markersize=markersize, label=r'$w_{rest}$')
 
     ax3.set_xlabel('Number of units')
     ax3.set_ylabel('Weight')
@@ -238,9 +235,9 @@ if run_n_patterns:
 
     fig4 = plt.figure(figsize=(16, 12))
     ax4 = fig4.add_subplot(111)
-    ax4.plot(n_patterns_vector, w_self_vector_patterns, '*-', lw=linewidth, markersize=markersize, label=r'$w_{self}$')
-    ax4.plot(n_patterns_vector, w_next_vector_patterns, '*-', lw=linewidth, markersize=markersize, label=r'$w_{next}$')
-    ax4.plot(n_patterns_vector, w_rest_vector_patterns, '*-', lw=linewidth, markersize=markersize, label=r'$w_{rest}$')
+    ax4.plot(n_patterns_vector, w_self_vector_patterns, 'o-', lw=linewidth, markersize=markersize, label=r'$w_{self}$')
+    ax4.plot(n_patterns_vector, w_next_vector_patterns, 'o-', lw=linewidth, markersize=markersize, label=r'$w_{next}$')
+    ax4.plot(n_patterns_vector, w_rest_vector_patterns, 'o-', lw=linewidth, markersize=markersize, label=r'$w_{rest}$')
 
 
     ax4.set_xlabel('Number of patterns')

@@ -226,6 +226,16 @@ Now that we have the training protocol we will study how the different weights v
 \textbf{Effects of learning on the persistent time}: in terms of the dynamics of the persistence time we can sketch out how the different training regimes will affect the behavior of the former quantity. The effect of an increased training time increases the distance between $w_{self}$ and $w_{next}$, this will increase the time that it takes the  
 
 
+\begin{figure}[H]%
+    \centering
+    \subfigure[Training time]{{\includegraphics[width=5cm]{bcpnn_learning_tau_z.pdf} }}%
+    \qquad
+    \subfigure[Epochs]{{\includegraphics[width=5cm]{bcpnn_learning_tau_p.pdf} }}%
+    \caption{Dynamics of weight learning. a) effects of the training time on learning. b) effects of the number of epochs on training. c) effects of the number of patterns on learning. d) effects of the number of units on learning. See text for explanation.}
+    \label{fig:simple_bcpnn_learning_tau}%
+\end{figure}
+
+
 \section{The problem Of Complex Sequences}
 Here it is one paper \cite{guyon1988storage}
 

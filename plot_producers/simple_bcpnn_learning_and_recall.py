@@ -144,10 +144,10 @@ ax11.fill_between(time_training, np.min(z_training[:, to_pattern]) *1.1, np.max(
 
 # Labels, and legends
 ax11.legend()
-ax11.set_xlabel('Time (ms)')
-ax21.set_xlabel('Time (ms)')
-ax12.set_xlabel('Time (ms)')
-ax31.set_xlabel('Time (ms)')
+ax11.set_xlabel('Time (s)')
+ax21.set_xlabel('Time (s)')
+ax12.set_xlabel('Time (s)')
+ax31.set_xlabel('Time (s)')
 
 ax11.set_title('z-traces')
 ax31.set_title('Recall')

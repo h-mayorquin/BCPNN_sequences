@@ -122,7 +122,7 @@ ax3.set_title('Self-Exc current minus adaptation')
 
 ax3.axhline(g_w_ampa * w_next, ls='--', color='black', label=r'$w_{next}$')
 ax3.legend()
-ax3.set_xlabel('Time (ms)')
+ax3.set_xlabel('Time (s)')
 fig.tight_layout()
 
 # Here we plot our connectivity matrix
