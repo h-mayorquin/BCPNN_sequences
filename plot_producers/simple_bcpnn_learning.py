@@ -10,10 +10,10 @@ import seaborn as sns
 
 from network import Protocol, NetworkManager, BCPNNPerfect
 
-run_training_time = True
+run_training_time = False
 run_epochs = False
 run_minicolumns = False
-run_n_patterns = False
+run_n_patterns = True
 
 sns.set(font_scale=3.5)
 sns.set_style(style='white')
@@ -206,7 +206,7 @@ if run_minicolumns:
 ########
 if run_n_patterns:
 
-    n_patterns_vector = np.arange(5, 100, 5, dtype='int')
+    n_patterns_vector = np.arange(10, 100, 5, dtype='int')
     w_self_vector_patterns = np.zeros_like(n_patterns_vector, dtype='float')
     w_next_vector_patterns = np.zeros_like(n_patterns_vector, dtype='float')
     w_rest_vector_patterns = np.zeros_like(n_patterns_vector, dtype='float')

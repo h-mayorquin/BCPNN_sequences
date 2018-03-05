@@ -78,7 +78,7 @@ time_training = np.linspace(0, manager.T_total, num=o_training.shape[0])
 ##########
 # Recall
 ###########
-T_recall = 0.230
+T_recall = 0.400
 T_cue = 0.100
 sequences = [patterns_indexes]
 I_cue = 0.0

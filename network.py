@@ -521,7 +521,7 @@ class Protocol:
         self.epochs = None
 
     def simple_protocol(self, patterns_indexes, training_time=1.0, inter_pulse_interval=0.0,
-                        inter_sequence_interval=1.0, epochs=1):
+                        inter_sequence_interval=1.0, epochs=1, resting_time=0.0):
         """
         The simples protocol to train a sequence
 
@@ -567,9 +567,14 @@ class Protocol:
                 times_sequence.pop()
                 learning_constants_sequence.pop()
 
-            if inter_sequence_interval > epsilon:
+            if inter_sequence_interval > epsilon and i < epochs - 1:
                 patterns_sequence.append(None)
                 times_sequence.append(inter_sequence_interval)
+                learning_constants_sequence.append(0.0)
+
+            if resting_time > epsilon and i == epochs - 1:
+                patterns_sequence.append(None)
+                times_sequence.append(resting_time)
                 learning_constants_sequence.append(0.0)
 
             # End of epoch
