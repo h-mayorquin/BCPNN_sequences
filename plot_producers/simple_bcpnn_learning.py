@@ -38,6 +38,7 @@ tau_a = 0.250
 G = 1.0
 sigma = 0.0
 
+
 # Patterns parameters
 hypercolumns = 1
 minicolumns = 10

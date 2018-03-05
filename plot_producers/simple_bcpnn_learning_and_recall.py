@@ -23,6 +23,9 @@ annotations = False
 captions = True
 
 
+always_learning = True
+k_perfect = True
+
 # First we run the training protocol
 g_w_ampa = 2.0
 g_w = 0.0
@@ -48,11 +51,11 @@ inter_sequence_interval = 0.5
 inter_pulse_interval = 0.0
 epochs = 2
 
-
 # Build the network
-nn = BCPNNPerfect(hypercolumns, minicolumns, g_w_ampa=g_w_ampa, g_w=g_w, g_a=g_a, tau_a=tau_a,
-                  sigma=sigma, G=G, tau_z_pre_ampa=tau_z_pre_ampa, tau_z_post_ampa=tau_z_pre_ampa, tau_p=tau_p,
-                  z_transfer=False, diagonal_zero=False, strict_maximum=False, perfect=True)
+nn = BCPNNPerfect(hypercolumns, minicolumns, g_w_ampa=g_w_ampa, g_w=g_w, g_a=g_a, tau_a=tau_a, sigma=sigma, G=G,
+                  tau_z_pre_ampa=tau_z_pre_ampa, tau_z_post_ampa=tau_z_pre_ampa, tau_p=tau_p, z_transfer=False,
+                  diagonal_zero=False, strict_maximum=False, perfect=True, k_perfect=k_perfect,
+                  always_learning=always_learning)
 
 # Build the manager
 manager = NetworkManager(nn=nn, dt=dt, values_to_save=values_to_save)

@@ -10,9 +10,9 @@ epoch_end_string = 'epoch_end'
 
 class BCPNNModular:
     def __init__(self, hypercolumns, minicolumns, beta=None, w=None, G=1.0, tau_m=0.020, g_w=1.0, g_w_ampa=1.0, g_beta=1,
-                 tau_z_pre=0.150, tau_z_post=0.005, tau_z_pre_ampa=0.005, tau_z_post_ampa=0.005, tau_p=10.0, tau_k=0.010,
-                 tau_a=2.70, g_a=97.0, g_I=10.0, p=1.0, k=0.0, sigma=1.0, epsilon=1e-20, k_inner=False, prng=np.random,
-                 diagonal_zero=True, z_transfer=True):
+                 tau_z_pre=0.150, tau_z_post=0.005, tau_z_pre_ampa=0.005, tau_z_post_ampa=0.005, tau_p=10.0, tau_k=0.005,
+                 tau_a=2.70, g_a=97.0, g_I=10.0, p=1.0, k=0.0, sigma=1.0, epsilon=1e-20, k_perfect=True, prng=np.random,
+                 diagonal_zero=True, z_transfer=True, always_learning=False):
         # Initial values are taken from the paper on memory by Marklund and Lansner also from Phil's paper
 
         # Random number generator
@@ -48,10 +48,12 @@ class BCPNNModular:
         self.g_beta = g_beta
         self.g_I = g_I
 
+        # Learning
         self.k = k
         self.tau_k = tau_k
         self.k_d = 0
-        self.k_inner = k_inner
+        self.k_perfect = k_perfect
+        self.always_learning = always_learning
 
         self.p = p
 
@@ -150,7 +152,6 @@ class BCPNNModular:
             sigma = self.prng.normal(0, self.sigma, self.n_units)
 
         # Updated the probability and the support
-
         self.i_nmda = self.g_w * self.w @ self.z_pre
         self.i_ampa = self.g_w_ampa * self.w_ampa @ self.z_pre_ampa
 
@@ -178,21 +179,9 @@ class BCPNNModular:
         self.z_post_ampa += (dt / self.tau_z_post_ampa) * (self.o - self.z_post_ampa)
         self.z_co_ampa = np.outer(self.z_post_ampa, self.z_pre_ampa)
 
+        # If always learning the value of k does not matter
+        if self.always_learning:
 
-        if self.k_inner:
-            self.k_d += (dt / self.tau_k) * (self.k - self.k_d)
-
-            # Updated the probability of the NMDA connection
-            self.p_pre += (dt / self.tau_p) * (self.z_pre - self.p_pre) * self.k_d
-            self.p_post += (dt / self.tau_p) * (self.z_post - self.p_post) * self.k_d
-            self.p_co += (dt / self.tau_p) * (self.z_co - self.p_co) * self.k_d
-
-            # Updated the probability of AMPA connection
-            self.p_pre_ampa += (dt / self.tau_p) * (self.z_pre_ampa - self.p_pre_ampa) * self.k_d
-            self.p_post_ampa += (dt / self.tau_p) * (self.z_post_ampa - self.p_post_ampa) * self.k_d
-            self.p_co_ampa += (dt / self.tau_p) * (self.z_co_ampa - self.p_co_ampa) * self.k_d
-
-        else:
             # Updated the probability of the NMDA connection
             self.p_pre += (dt / self.tau_p) * (self.z_pre - self.p_pre)
             self.p_post += (dt / self.tau_p) * (self.z_post - self.p_post)
@@ -203,12 +192,47 @@ class BCPNNModular:
             self.p_post_ampa += (dt / self.tau_p) * (self.z_post_ampa - self.p_post_ampa)
             self.p_co_ampa += (dt / self.tau_p) * (self.z_co_ampa - self.p_co_ampa)
 
-        if self.k > self.epsilon:
+            # Update the connectivity
             self.beta = get_beta(self.p_post, self.epsilon)
             self.w_ampa = get_w_pre_post(self.p_co_ampa, self.p_pre_ampa, self.p_post_ampa, self.p,
                                          self.epsilon, diagonal_zero=self.diagonal_zero)
             self.w = get_w_pre_post(self.p_co, self.p_pre, self.p_post, self.p,
                                     self.epsilon, diagonal_zero=self.diagonal_zero)
+
+        # Otherwise only learnig when k is above epsilon
+
+        else:
+        # This determines whether the effects of training kick-in immediatley or have some dynamics of their own
+            if self.k_perfect:
+                # Updated the probability of the NMDA connection
+                self.p_pre += (dt / self.tau_p) * (self.z_pre - self.p_pre)
+                self.p_post += (dt / self.tau_p) * (self.z_post - self.p_post)
+                self.p_co += (dt / self.tau_p) * (self.z_co - self.p_co)
+
+                # Updated the probability of the AMPA connection
+                self.p_pre_ampa += (dt / self.tau_p) * (self.z_pre_ampa - self.p_pre_ampa)
+                self.p_post_ampa += (dt / self.tau_p) * (self.z_post_ampa - self.p_post_ampa)
+                self.p_co_ampa += (dt / self.tau_p) * (self.z_co_ampa - self.p_co_ampa)
+
+            else:
+                self.k_d += (dt / self.tau_k) * (self.k - self.k_d)
+
+                # Updated the probability of the NMDA connection
+                self.p_pre += (dt / self.tau_p) * (self.z_pre - self.p_pre) * self.k_d
+                self.p_post += (dt / self.tau_p) * (self.z_post - self.p_post) * self.k_d
+                self.p_co += (dt / self.tau_p) * (self.z_co - self.p_co) * self.k_d
+
+                # Updated the probability of AMPA connection
+                self.p_pre_ampa += (dt / self.tau_p) * (self.z_pre_ampa - self.p_pre_ampa) * self.k_d
+                self.p_post_ampa += (dt / self.tau_p) * (self.z_post_ampa - self.p_post_ampa) * self.k_d
+                self.p_co_ampa += (dt / self.tau_p) * (self.z_co_ampa - self.p_co_ampa) * self.k_d
+
+            if self.k > self.epsilon:
+                self.beta = get_beta(self.p_post, self.epsilon)
+                self.w_ampa = get_w_pre_post(self.p_co_ampa, self.p_pre_ampa, self.p_post_ampa, self.p,
+                                             self.epsilon, diagonal_zero=self.diagonal_zero)
+                self.w = get_w_pre_post(self.p_co, self.p_pre, self.p_post, self.p,
+                                        self.epsilon, diagonal_zero=self.diagonal_zero)
 
 
 class NetworkManager:
@@ -460,6 +484,9 @@ class NetworkManager:
         :param empty_history: whether the history should be cleaned
         """
         self.nn.k = 0
+        learning_state = self.nn.always_learning
+        self.nn.always_learning = False
+
         time_recalling = np.arange(0, T_recall, self.dt)
         time_cue = np.arange(0, T_cue, self.dt)
 
@@ -478,6 +505,9 @@ class NetworkManager:
 
         # Calculate total time
         self.T_total += T_recall + T_cue
+
+        # Return to the normal learning state
+        self.nn.always_learning = learning_state
 
 
 class Protocol:
@@ -704,14 +734,15 @@ class Protocol:
 class BCPNNPerfect:
     def __init__(self, hypercolumns, minicolumns, beta=None, w=None, G=1.0, tau_m=0.020, g_w=1.0, g_w_ampa=1.0, g_beta=1,
                  tau_z_pre=0.150, tau_z_post=0.005, tau_z_pre_ampa=0.005, tau_z_post_ampa=0.005, tau_p=10.0, tau_k=0.010,
-                 tau_a=2.70, g_a=97.0, g_I=10.0, p=1.0, k=0.0, sigma=1.0, epsilon=1e-20, k_inner=False, prng=np.random,
-                 diagonal_zero=True, z_transfer=True, strict_maximum=True, perfect=True):
+                 tau_a=2.70, g_a=97.0, g_I=10.0, p=1.0, k=0.0, sigma=1.0, epsilon=1e-20, k_perfect=True, prng=np.random,
+                 diagonal_zero=True, z_transfer=True, strict_maximum=True, perfect=True, always_learning=False):
         # Initial values are taken from the paper on memory by Marklund and Lansner also from Phil's paper
 
         # Random number generator
         self.prng = prng
         self.sigma = sigma
         self.epsilon = epsilon
+        self.always_learning = always_learning
 
         # Network parameters
         self.hypercolumns = hypercolumns
@@ -746,7 +777,7 @@ class BCPNNPerfect:
         self.k = k
         self.tau_k = tau_k
         self.k_d = 0
-        self.k_inner = k_inner
+        self.k_perfect = k_perfect
 
         self.p = p
 
@@ -888,23 +919,8 @@ class BCPNNPerfect:
         self.z_post_ampa += (dt / self.tau_z_post_ampa) * (self.o - self.z_post_ampa)
         self.z_co_ampa = np.outer(self.z_post_ampa, self.z_pre_ampa)
 
-        # Modulatory variables
-        self.p += (dt / self.tau_p) * (1 - self.p)
+        if self.always_learning:
 
-        if self.k_inner:
-            self.k_d += (dt / self.tau_k) * (self.k - self.k_d)
-
-            # Updated the probability of the NMDA connection
-            self.p_pre += (dt / self.tau_p) * (self.z_pre - self.p_pre) * self.k_d
-            self.p_post += (dt / self.tau_p) * (self.z_post - self.p_post) * self.k_d
-            self.p_co += (dt / self.tau_p) * (self.z_co - self.p_co) * self.k_d
-
-            # Updated the probability of AMPA connection
-            self.p_pre_ampa += (dt / self.tau_p) * (self.z_pre_ampa - self.p_pre_ampa) * self.k_d
-            self.p_post_ampa += (dt / self.tau_p) * (self.z_post_ampa - self.p_post_ampa) * self.k_d
-            self.p_co_ampa += (dt / self.tau_p) * (self.z_co_ampa - self.p_co_ampa) * self.k_d
-
-        else:
             # Updated the probability of the NMDA connection
             self.p_pre += (dt / self.tau_p) * (self.z_pre - self.p_pre)
             self.p_post += (dt / self.tau_p) * (self.z_post - self.p_post)
@@ -915,11 +931,44 @@ class BCPNNPerfect:
             self.p_post_ampa += (dt / self.tau_p) * (self.z_post_ampa - self.p_post_ampa)
             self.p_co_ampa += (dt / self.tau_p) * (self.z_co_ampa - self.p_co_ampa)
 
-        if self.k > self.epsilon:
+            # Update the connectivity
             self.beta = get_beta(self.p_post, self.epsilon)
             self.w_ampa = get_w_pre_post(self.p_co_ampa, self.p_pre_ampa, self.p_post_ampa, self.p,
                                          self.epsilon, diagonal_zero=self.diagonal_zero)
             self.w = get_w_pre_post(self.p_co, self.p_pre, self.p_post, self.p,
                                     self.epsilon, diagonal_zero=self.diagonal_zero)
 
+            # Otherwise only learnig when k is above epsilon
 
+        else:
+            # This determines whether the effects of training kick-in immediatley or have some dynamics of their own
+            if self.k_perfect:
+                # Updated the probability of the NMDA connection
+                self.p_pre += (dt / self.tau_p) * (self.z_pre - self.p_pre)
+                self.p_post += (dt / self.tau_p) * (self.z_post - self.p_post)
+                self.p_co += (dt / self.tau_p) * (self.z_co - self.p_co)
+
+                # Updated the probability of the AMPA connection
+                self.p_pre_ampa += (dt / self.tau_p) * (self.z_pre_ampa - self.p_pre_ampa)
+                self.p_post_ampa += (dt / self.tau_p) * (self.z_post_ampa - self.p_post_ampa)
+                self.p_co_ampa += (dt / self.tau_p) * (self.z_co_ampa - self.p_co_ampa)
+
+            else:
+                self.k_d += (dt / self.tau_k) * (self.k - self.k_d)
+
+                # Updated the probability of the NMDA connection
+                self.p_pre += (dt / self.tau_p) * (self.z_pre - self.p_pre) * self.k_d
+                self.p_post += (dt / self.tau_p) * (self.z_post - self.p_post) * self.k_d
+                self.p_co += (dt / self.tau_p) * (self.z_co - self.p_co) * self.k_d
+
+                # Updated the probability of AMPA connection
+                self.p_pre_ampa += (dt / self.tau_p) * (self.z_pre_ampa - self.p_pre_ampa) * self.k_d
+                self.p_post_ampa += (dt / self.tau_p) * (self.z_post_ampa - self.p_post_ampa) * self.k_d
+                self.p_co_ampa += (dt / self.tau_p) * (self.z_co_ampa - self.p_co_ampa) * self.k_d
+
+            if self.k > self.epsilon:
+                self.beta = get_beta(self.p_post, self.epsilon)
+                self.w_ampa = get_w_pre_post(self.p_co_ampa, self.p_pre_ampa, self.p_post_ampa, self.p,
+                                             self.epsilon, diagonal_zero=self.diagonal_zero)
+                self.w = get_w_pre_post(self.p_co, self.p_pre, self.p_post, self.p,
+                                        self.epsilon, diagonal_zero=self.diagonal_zero)
