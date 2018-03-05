@@ -11,9 +11,9 @@ import seaborn as sns
 from network import Protocol, NetworkManager, BCPNNPerfect
 
 run_training_time = True
-run_epochs = True
-run_minicolumns = True
-run_n_patterns = True
+run_epochs = False
+run_minicolumns = False
+run_n_patterns = False
 
 sns.set(font_scale=3.5)
 sns.set_style(style='white')
@@ -57,7 +57,7 @@ epochs = 3
 # Training times
 #########
 if run_training_time:
-    training_times_vector = np.arange(0.050, 2.050, 0.050)
+    training_times_vector = np.arange(0.050, 3.050, 0.150)
     w_self_vector_tt = np.zeros_like(training_times_vector)
     w_next_vector_tt = np.zeros_like(training_times_vector)
     w_rest_vector_tt = np.zeros_like(training_times_vector)
@@ -107,7 +107,7 @@ if run_training_time:
 # Epochs
 ############
 if run_epochs:
-    epochs_vector = np.arange(1, 50, 1, dtype='int')
+    epochs_vector = np.arange(1, 40, 2, dtype='int')
     w_self_vector_epochs = np.zeros_like(epochs_vector, dtype='float')
     w_next_vector_epochs = np.zeros_like(epochs_vector, dtype='float')
     w_rest_vector_epochs = np.zeros_like(epochs_vector, dtype='float')
@@ -155,7 +155,7 @@ if run_epochs:
 # Mincolumns
 ########
 if run_minicolumns:
-    minicolumns_vector = np.arange(5, 51, 1, dtype='int')
+    minicolumns_vector = np.arange(5, 100, 5, dtype='int')
     w_self_vector_minicolumns = np.zeros_like(minicolumns_vector, dtype='float')
     w_next_vector_minicolumns = np.zeros_like(minicolumns_vector, dtype='float')
     w_rest_vector_minicolumns = np.zeros_like(minicolumns_vector, dtype='float')
@@ -205,7 +205,7 @@ if run_minicolumns:
 ########
 if run_n_patterns:
 
-    n_patterns_vector = np.arange(5, 51, 1, dtype='int')
+    n_patterns_vector = np.arange(5, 100, 5, dtype='int')
     w_self_vector_patterns = np.zeros_like(n_patterns_vector, dtype='float')
     w_next_vector_patterns = np.zeros_like(n_patterns_vector, dtype='float')
     w_rest_vector_patterns = np.zeros_like(n_patterns_vector, dtype='float')

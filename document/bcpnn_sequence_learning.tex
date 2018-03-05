@@ -223,15 +223,17 @@ Now that we have the training protocol we will study how the different weights v
 
 
 
-\textbf{Effects of learning on the persistent time}: in terms of the dynamics of the persistence time we can sketch out how the different training regimes will affect the behavior of the former quantity. The effect of an increased training time increases the distance between $w_{self}$ and $w_{next}$, this will increase the time that it takes the  
+\textbf{Effects of learning on the persistent time}: in terms of the dynamics of the persistence time we can sketch out how the different training regimes will affect the behavior of the former quantity. The effect of an increased training time increases the distance between $w_{self}$ and $w_{next}$, as we haven seen in figure \ref{fig:simple_bcpnn_comparison} d) this increases the persistent time $T_{persistence}$. 
 
+\textbf{Learning Dynamic Parameters}:
+We have studied above the effects of the training protocol we can study the effects of the time constants in equations \ref{eq:traces} and \ref{eq:traces_probability}. We show both of this results in figure \ref{fig:simple_bcpnn_learning_tau}. 
 
 \begin{figure}[H]%
     \centering
-    \subfigure[Training time]{{\includegraphics[width=5cm]{bcpnn_learning_tau_z.pdf} }}%
+    \subfigure[]{{\includegraphics[width=5cm]{bcpnn_learning_tau_z.pdf} }}%
     \qquad
-    \subfigure[Epochs]{{\includegraphics[width=5cm]{bcpnn_learning_tau_p.pdf} }}%
-    \caption{Dynamics of weight learning. a) effects of the training time on learning. b) effects of the number of epochs on training. c) effects of the number of patterns on learning. d) effects of the number of units on learning. See text for explanation.}
+    \subfigure[]{{\includegraphics[width=5cm]{bcpnn_learning_tau_p.pdf} }}%
+    \caption{Connectivity matrix dependency on the learning parameters. a) Dependence on $\tau_z$. We appreciate than the distance between $w_{self}$ and $w_{next}$ becomes smaller as $\tau_z$ increases. b) Dependence on $\tau_p$. In this case the relationship between $w_{self}$ and $w_{next}$ is not so pronounced, although there is a little bit of a change. }
     \label{fig:simple_bcpnn_learning_tau}%
 \end{figure}
 

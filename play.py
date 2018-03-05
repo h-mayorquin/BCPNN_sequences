@@ -16,35 +16,47 @@ np.set_printoptions(suppress=True, precision=2)
 
 sns.set(font_scale=3.0)
 
-from network import Protocol, BCPNNModular, NetworkManager
+from network import Protocol, BCPNNModular, NetworkManager, BCPNNPerfect
 from plotting_functions import plot_weight_matrix
 
+g_w_ampa = 2.0
+g_w = 1.0
+g_a = 10.0
+tau_a = 0.250
+tau_z = 0.150
+G = 1.0
+tau_m = 0.001
+
+# Patterns parameters
 # Patterns parameters
 hypercolumns = 4
-minicolumns = 20
+minicolumns = 10
+n_patterns = 10
+
+# Manager properties
 dt = 0.001
-values_to_save = ['o', 's', 'z_pre', 'z_post', 'a', 'p_pre', 'p_post', 'p_co', 'z_co', 'w', 'p',]
+values_to_save = ['o', 's', 'z_pre', 'z_post', 'a', 'i_ampa', 'i_nmda']
+
+# Protocol
+training_time = 0.100
+inter_sequence_interval = 1.0
+inter_pulse_interval = 0.0
+epochs = 3
 
 # Build the network
-nn = BCPNNModular(hypercolumns, minicolumns)
+nn = BCPNNPerfect(hypercolumns, minicolumns, g_w_ampa=g_w_ampa, g_w=g_w, g_a=g_a, tau_a=tau_a,
+                  tau_z_pre=tau_z, G=G, tau_m=tau_m,
+                  z_transfer=False)
 
 # Build the manager
 manager = NetworkManager(nn=nn, dt=dt, values_to_save=values_to_save)
 
-
-# Protocol
-training_time = 0.1
-inter_sequence_interval = 1.0
-epochs = 3
-number_of_sequences = 2
-half_width = 3
-units_to_overload = [0, 1]
-
-# Build chain protocol
-chain_protocol = Protocol()
-sequences = chain_protocol.create_overload_chain(number_of_sequences, half_width, units_to_overload)
-chain_protocol.cross_protocol(chain=sequences, training_time=training_time,
-                              inter_sequence_interval=inter_sequence_interval, epochs=epochs)
+# Build the protocol for training
+protocol = Protocol()
+patterns_indexes = [i for i in range(n_patterns)]
+training_time = np.linspace(0.100, 2.0, num=n_patterns)
+protocol.simple_protocol(patterns_indexes, training_time=training_time, inter_pulse_interval=inter_pulse_interval,
+                         inter_sequence_interval=inter_sequence_interval, epochs=epochs)
 
 # Train
-epoch_history = manager.run_network_protocol(protocol=chain_protocol, verbose=True)
+# epoch_history = manager.run_network_protocol(protocol=protocol, verbose=True)

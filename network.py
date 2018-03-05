@@ -178,8 +178,6 @@ class BCPNNModular:
         self.z_post_ampa += (dt / self.tau_z_post_ampa) * (self.o - self.z_post_ampa)
         self.z_co_ampa = np.outer(self.z_post_ampa, self.z_pre_ampa)
 
-        # Modulatory variables
-        self.p += (dt / self.tau_p) * (1 - self.p)
 
         if self.k_inner:
             self.k_d += (dt / self.tau_k) * (self.k - self.k_d)
@@ -508,13 +506,20 @@ class Protocol:
         self.epochs = epochs
         self.patterns_indexes = patterns_indexes
 
+        if isinstance(training_time, (float, int)):
+            self.training_times = [training_time for i in range(len(patterns_indexes))]
+        elif isinstance(training_time, (list, np.ndarray)):
+            self.training_times = training_time
+        else:
+            raise TypeError('Type of training time not understood')
+
         patterns_sequence = []
         times_sequence = []
         learning_constants_sequence = []
 
         for i in range(epochs):
             # Let's fill the times
-            for pattern in patterns_indexes:
+            for pattern, training_time in zip(patterns_indexes, self.training_times):
                 # This is when the pattern is training
                 patterns_sequence.append(pattern)
                 times_sequence.append(training_time)
@@ -582,7 +587,6 @@ class Protocol:
         self.patterns_sequence = patterns_sequence
         self.times_sequence = times_sequence
         self.learning_constants_sequence = learning_constant_sequence
-
 
     def create_overload_chain(self, number_of_sequences, half_width, units_to_overload):
 
