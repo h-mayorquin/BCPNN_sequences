@@ -19,9 +19,7 @@ fig = plt.figure(figsize=(16, 12))
 from_pattern = 2
 to_pattern = 3
 
-annotations = False
 captions = True
-
 
 always_learning = True
 k_perfect = True
@@ -43,7 +41,7 @@ n_patterns = 10
 
 # Manager properties
 dt = 0.001
-values_to_save = ['o', 's', 'z_pre_ampa', 'w_ampa']
+values_to_save = ['o', 's', 'z_pre_ampa', 'w_ampa', 'p_pre']
 
 # Protocol
 training_time = 0.100
@@ -73,6 +71,7 @@ z_training = manager.history['z_pre_ampa']
 o_training = manager.history['o']
 w_training = manager.history['w_ampa'][:, to_pattern, from_pattern]
 time_training = np.linspace(0, manager.T_total, num=o_training.shape[0])
+p = manager.history['p_pre']
 
 
 ##########
@@ -91,12 +90,13 @@ total_sequence_time, mean, std, success, timings = aux
 o_recall = manager.history['o']
 time_recall = np.linspace(0, manager.T_total, num=o_recall.shape[0])
 
+
 ##############
 # Plot everything
 ##############
 if captions:
     size = 35
-    aux_x = 0.05
+    aux_x = 0.04
     aux_x2 = 0.52
     fig.text(aux_x, 0.93, 'a)', size=size)
     fig.text(aux_x, 0.60, 'c)', size=size)
@@ -157,12 +157,12 @@ ax31.set_title('Recall')
 ax21.set_title('Weight evolution')
 ax12.set_title('Training')
 
-
 fig.tight_layout()
 ##############
 # The weight matrix and recall
 ##############
 cmap = matplotlib.cm.inferno_r
+# cmap = matplotlib.cm.coolwarm
 
 rect = [0.58, 0.08, 0.33, 0.33]
 
@@ -182,26 +182,11 @@ fig.colorbar(im, cax=cax, orientation='vertical')
 
 ax_conn.set_title('Connectivity Matrix')
 
-if annotations:
-    ax_conn.annotate(r'$w_{next}$', xy=(0, 1), xytext=(0, 5),
-                     arrowprops=dict(facecolor='red', shrink=0.15))
-
-    ax_conn.annotate(r'$w_{self}$', xy=(0.0, 0), xytext=(4, -1),
-                arrowprops=dict(facecolor='red', shrink=0.05))
-
-    ax_conn.annotate(r'$w_{rest}$', xy=(7, 2.5), xytext=(7, 5),
-                arrowprops=dict(facecolor='red', shrink=0.05))
-
-    ax_conn.annotate(r'$w_{rest}$', xy=(2, 8), xytext=(2, 6.5),
-                arrowprops=dict(facecolor='red', shrink=0.05))
-
-######
-#
-######
+# Here we take care of the legends
 
 handles, labels = ax21.get_legend_handles_labels()
 
-fig.legend(handles=handles, labels=labels, loc=(0.39, 0.46), fancybox=False, frameon=True, facecolor=(1.0, 1.0, 1.0),
+fig.legend(handles=handles, labels=labels, loc=(0.40, 0.46), fancybox=False, frameon=True, facecolor=(1.0, 1.0, 1.0),
            fontsize=22, ncol=1)
 
 handles, labels = ax12.get_legend_handles_labels()
@@ -212,3 +197,4 @@ fig.legend(handles=handles, labels=labels, loc=(0.64, 0.46), fancybox=True, fram
 
 fig.savefig('./plot_producers/bcpnn_learning_and_recall.pdf', frameon=False, dpi=110, bbox_inches='tight')
 plt.close()
+

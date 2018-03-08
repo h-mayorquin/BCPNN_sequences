@@ -1,6 +1,14 @@
 import numpy as np
 
 
+def get_weights(manager, from_pattern, to_pattern):
+
+    w_self = manager.nn.w_ampa[from_pattern, from_pattern]
+    w_next = manager.nn.w_ampa[to_pattern, from_pattern]
+    w_rest = np.mean(manager.nn.w_ampa[(to_pattern + 1):, from_pattern])
+
+    return w_self, w_next, w_rest
+
 def create_artificial_matrix(hypercolumns, minicolumns, number_of_patterns, value, inhibition, decay_factor,
                              extension, diagonal_zero, diagonal_across, diagonal_value, sequence_decay=1.0,
                              free_attractor=False, free_attractor_value=0.5):
