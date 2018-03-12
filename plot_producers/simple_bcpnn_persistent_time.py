@@ -47,11 +47,11 @@ tau_a = 0.250
 tau_z = 0.150
 G = 1.0
 sigma = 0.0
+perfect = False
 
 w_self = 1.0
 w_next = -0.1
 w_rest = -0.2
-
 
 markersize = 32
 linewdith = 10
@@ -84,7 +84,7 @@ for index, tau_a_ in enumerate(tau_a_vector):
     # Build the network
     nn = BCPNNPerfect(hypercolumns, minicolumns, g_w_ampa=g_w_ampa, g_w=g_w, g_a=g_a, tau_a=tau_a_,
                       sigma=sigma, G=G,
-                      z_transfer=False, diagonal_zero=False, strict_maximum=True, perfect=True)
+                      z_transfer=False, diagonal_zero=False, strict_maximum=True, perfect=perfect)
 
     # Build the manager
     manager = NetworkManager(nn=nn, dt=dt, values_to_save=values_to_save)
@@ -141,7 +141,7 @@ for index, g_a_ in enumerate(g_a_vector):
     # Build the network
     nn = BCPNNPerfect(hypercolumns, minicolumns, g_w_ampa=g_w_ampa, g_w=g_w, g_a=g_a_, tau_a=tau_a,
                       sigma=sigma, G=G,
-                      z_transfer=False, diagonal_zero=False, strict_maximum=True, perfect=True)
+                      z_transfer=False, diagonal_zero=False, strict_maximum=True, perfect=perfect)
 
     # Build the manager
     manager = NetworkManager(nn=nn, dt=dt, values_to_save=values_to_save)
@@ -202,7 +202,7 @@ for index, g_w_ampa_ in enumerate(g_w_ampa_vector):
     # Build the network
     nn = BCPNNPerfect(hypercolumns, minicolumns, g_w_ampa=g_w_ampa_, g_w=g_w, g_a=g_a, tau_a=tau_a,
                       sigma=sigma, G=G,
-                      z_transfer=False, diagonal_zero=False, strict_maximum=True, perfect=True)
+                      z_transfer=False, diagonal_zero=False, strict_maximum=True, perfect=perfect)
 
     # Build the manager
     manager = NetworkManager(nn=nn, dt=dt, values_to_save=values_to_save)
@@ -262,7 +262,7 @@ for index, w_next_ in enumerate(w_next_vector):
     # Build the network
     nn = BCPNNPerfect(hypercolumns, minicolumns, g_w_ampa=g_w_ampa, g_w=g_w, g_a=g_a, tau_a=tau_a,
                       sigma=sigma, G=G,
-                      z_transfer=False, diagonal_zero=False, strict_maximum=True, perfect=True)
+                      z_transfer=False, diagonal_zero=False, strict_maximum=True, perfect=perfect)
 
     # Build the manager
     manager = NetworkManager(nn=nn, dt=dt, values_to_save=values_to_save)

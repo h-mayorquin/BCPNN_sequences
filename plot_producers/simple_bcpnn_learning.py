@@ -10,9 +10,9 @@ import seaborn as sns
 
 from network import Protocol, NetworkManager, BCPNNPerfect
 
-run_training_time = False
-run_epochs = False
-run_minicolumns = False
+run_training_time = True
+run_epochs = True
+run_minicolumns = True
 run_n_patterns = True
 
 sns.set(font_scale=3.5)
@@ -30,6 +30,9 @@ def get_weights(manager, from_pattern, to_pattern):
     w_rest = np.mean(nn.w_ampa[(to_pattern + 1):, from_pattern])
 
     return w_self, w_next, w_rest
+
+strict_maximum = True
+perfect = False
 
 g_w_ampa = 2.0
 g_w = 0.0
@@ -68,7 +71,7 @@ if run_training_time:
         # Build the network
         nn = BCPNNPerfect(hypercolumns, minicolumns, g_w_ampa=g_w_ampa, g_w=g_w, g_a=g_a, tau_a=tau_a,
                           sigma=sigma, G=G,
-                          z_transfer=False, diagonal_zero=False, strict_maximum=True, perfect=True)
+                          z_transfer=False, diagonal_zero=False, strict_maximum=strict_maximum, perfect=perfect)
 
         # Build the manager
         manager = NetworkManager(nn=nn, dt=dt, values_to_save=values_to_save)
@@ -118,7 +121,7 @@ if run_epochs:
         # Build the network
         nn = BCPNNPerfect(hypercolumns, minicolumns, g_w_ampa=g_w_ampa, g_w=g_w, g_a=g_a, tau_a=tau_a,
                           sigma=sigma, G=G,
-                          z_transfer=False, diagonal_zero=False, strict_maximum=True, perfect=True)
+                          z_transfer=False, diagonal_zero=False, strict_maximum=strict_maximum, perfect=perfect)
 
         # Build the manager
         manager = NetworkManager(nn=nn, dt=dt, values_to_save=values_to_save)
@@ -166,7 +169,7 @@ if run_minicolumns:
         # Build the network
         nn = BCPNNPerfect(hypercolumns, minicolumns_, g_w_ampa=g_w_ampa, g_w=g_w, g_a=g_a, tau_a=tau_a,
                           sigma=sigma, G=G,
-                          z_transfer=False, diagonal_zero=False, strict_maximum=True, perfect=True)
+                          z_transfer=False, diagonal_zero=False, strict_maximum=strict_maximum, perfect=perfect)
 
         # Build the manager
         manager = NetworkManager(nn=nn, dt=dt, values_to_save=values_to_save)
@@ -215,7 +218,7 @@ if run_n_patterns:
         # Build the network
         nn = BCPNNPerfect(hypercolumns, n_patterns_vector[-1], g_w_ampa=g_w_ampa, g_w=g_w, g_a=g_a, tau_a=tau_a,
                           sigma=sigma, G=G,
-                          z_transfer=False, diagonal_zero=False, strict_maximum=True, perfect=True)
+                          z_transfer=False, diagonal_zero=False, strict_maximum=strict_maximum, perfect=perfect)
 
         # Build the manager
         manager = NetworkManager(nn=nn, dt=dt, values_to_save=values_to_save)

@@ -40,6 +40,9 @@ tau_z = 0.150
 G = 1.0
 sigma = 0.0
 
+perfect = True
+strict_maximum = True
+
 w_self = 1.0
 w_next = -2
 w_rest = -4
@@ -55,7 +58,7 @@ values_to_save = ['o', 's', 'a', 'i_ampa']
 
 nn = BCPNNPerfect(hypercolumns, minicolumns, g_w_ampa=g_w_ampa, g_w=g_w, g_a=g_a, tau_a=tau_a,
                   sigma=sigma, G=G,
-                  z_transfer=False, diagonal_zero=False, strict_maximum=True, perfect=True)
+                  z_transfer=False, diagonal_zero=False, strict_maximum=strict_maximum, perfect=perfect)
 
 # Build the manager
 manager = NetworkManager(nn=nn, dt=dt, values_to_save=values_to_save)
