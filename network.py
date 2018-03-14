@@ -516,6 +516,7 @@ class Protocol:
 
         self.patterns_indexes = None
         self.patterns_sequence = None
+        self.training_times = None
         self.times_sequence = None
         self.learning_constants_sequence = None
         self.epochs = None
@@ -739,7 +740,7 @@ class Protocol:
 class BCPNNPerfect:
     def __init__(self, hypercolumns, minicolumns, beta=None, w=None, G=1.0, tau_m=0.020, g_w=1.0, g_w_ampa=1.0, g_beta=1,
                  tau_z_pre=0.150, tau_z_post=0.005, tau_z_pre_ampa=0.005, tau_z_post_ampa=0.005, tau_p=10.0, tau_k=0.010,
-                 tau_a=2.70, g_a=97.0, g_I=10.0, p=1.0, k=0.0, sigma=1.0, epsilon=1e-20, k_perfect=True, prng=np.random,
+                 tau_a=2.70, g_a=97.0, g_I=100.0, p=1.0, k=0.0, sigma=1.0, epsilon=1e-20, k_perfect=True, prng=np.random,
                  diagonal_zero=True, z_transfer=True, strict_maximum=True, perfect=True, always_learning=False):
         # Initial values are taken from the paper on memory by Marklund and Lansner also from Phil's paper
 
@@ -826,7 +827,9 @@ class BCPNNPerfect:
                       'tau_p': self.tau_p, 'tau_a': self.tau_a, 'g_a': self.g_a, 'g_w': self.g_w,
                       'g_beta': self.g_beta, 'g_I':self.g_I, 'sigma':self.sigma, 'k': self.k,
                       'g_w_ampa': self.g_w_ampa, 'tau_z_post_ampa': self.tau_z_post_ampa,
-                      'tau_z_pre_ampa': self.tau_z_pre_ampa, 'epsilon': self.epsilon, 'G': self.G}
+                      'tau_z_pre_ampa': self.tau_z_pre_ampa, 'epsilon': self.epsilon, 'G': self.G,
+                      'always_learnin': self.always_learning, 'perfect': self.perfect,
+                      'k_perfect': self.k_perfect, 'z_transfer': self.z_transfer}
 
         return parameters
 
@@ -892,20 +895,19 @@ class BCPNNPerfect:
             self.s = (self.i_nmda  # NMDA effects
                        + self.i_ampa  # Ampa effects
                        + self.g_beta * self.beta  # Bias
-                       + self.g_I * log_epsilon(self.I)  # Input current
+                       + self.g_I * self.I  # Input current
                        - self.g_a * self.a  # Adaptation
                        + sigma)  # This last term is the noise
         else:
             self.s += (dt / self.tau_m) * (self.i_nmda  # NMDA effects
                                            + self.i_ampa  # Ampa effects
                                            + self.g_beta * self.beta  # Bias
-                                           + self.g_I * log_epsilon(self.I)  # Input current
+                                           + self.g_I * self.I  # Input current
                                            - self.g_a * self.a  # Adaptation
                                            + sigma  # This last term is the noise
                                            - self.s)  # s follow all of the s above
 
-
-            # Soft-max
+        # Soft-max
         if self.strict_maximum:
             self.o = strict_max(self.s, minicolumns=self.minicolumns)
         else:

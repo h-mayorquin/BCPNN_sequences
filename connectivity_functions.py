@@ -137,12 +137,25 @@ def strict_max(x, minicolumns):
 
     return z.reshape(x.size)
 
+
 def normalize_p(p, hypercolumns, minicolumns):
 
     x = p.reshape((hypercolumns, minicolumns))
     x = x / np.sum(x, axis=1)[:, np.newaxis]
 
     return x.reshape(hypercolumns * minicolumns)
+
+
+def simple_bcpnn_matrix(minicolumns, w_self, w_next, w_rest):
+
+    w = np.ones((minicolumns, minicolumns)) * w_rest
+    for i in range(minicolumns):
+        w[i, i] = w_self
+
+    for i in range(minicolumns -1):
+        w[i + 1, i] = w_next
+
+    return w
 
 
 def load_minicolumn_matrix(w, sequence_indexes, value=1, inhibition=-1, extension=1,

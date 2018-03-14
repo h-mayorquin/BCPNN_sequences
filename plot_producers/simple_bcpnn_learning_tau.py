@@ -11,6 +11,7 @@ import seaborn as sns
 from network import Protocol, NetworkManager, BCPNNPerfect
 from analysis_functions import calculate_recall_time_quantities
 
+
 sns.set(font_scale=2.8)
 sns.set_style(style='white')
 
