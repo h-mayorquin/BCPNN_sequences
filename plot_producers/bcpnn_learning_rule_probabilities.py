@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
 import seaborn as sns
 from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -64,7 +65,8 @@ vmin = np.min([w1, w2, w3])
 
 extent = [p_j_vector[0], p_j_vector[-1], p_ij_vector[0], p_ij_vector[-1]]
 
-cmap = 'coolwarm'
+cmap = matplotlib.cm.RdBu_r
+
 im1 = ax1.imshow(w1, origin='lower', cmap=cmap, extent=extent, vmin=vmin, vmax=vmax)
 ax1.grid()
 divider = make_axes_locatable(ax1)

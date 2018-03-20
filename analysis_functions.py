@@ -73,6 +73,8 @@ def calculate_angle_from_history(manager):
     stored_pattern_indexes = manager.stored_patterns_indexes
 
     o = history['o'][1:]
+    if o.shape[0] == 0:
+        raise ValueError('You did not record the history of unit activities o')
 
     distances = np.zeros((o.shape[0], manager.nn.minicolumns))
 
@@ -126,7 +128,7 @@ def calculate_patterns_timings(winning_patterns, dt, remove=0):
     return patterns_timings
 
 
-def calculate_timings(manager, remove=0.010):
+def calculate_timings(manager, remove=0.005):
 
     angles = calculate_angle_from_history(manager)
     winning_patterns = calculate_winning_pattern_from_distances(angles)

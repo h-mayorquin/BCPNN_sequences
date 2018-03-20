@@ -88,7 +88,7 @@ patterns = [0, 1, 2]
 # patterns = sequences[0]
 
 w_diff = w_self - w_next
-sigma = 0.25 * g_w_ampa*  w_diff
+sigma = 0.25 * g_w_ampa * w_diff
 linewidth = 10
 current_palette = sns.color_palette()
 

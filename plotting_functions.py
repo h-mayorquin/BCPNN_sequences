@@ -57,7 +57,7 @@ def plot_weight_matrix(nn, ampa=False, one_hypercolum=True, ax=None):
 
         aux_max = np.max(np.abs(w))
 
-        cmap = 'coolwarm'
+        cmap = matplotlib.cm.RdBu_r
 
         if ax is None:
             # sns.set_style("whitegrid", {'axes.grid': False})

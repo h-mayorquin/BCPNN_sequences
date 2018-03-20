@@ -104,7 +104,7 @@ It is important to note that in this case we utilized a tailor-made connectivity
 \begin{figure}[H]
 \centering
 \includegraphics[scale=0.26]{simple_bcpnn_recall.pdf}
-\caption{An instance of recall in the simple BCPNN neural network. a) Unit activity starting with the cue. b) the time course of the adaptation for each unit. c) the self-excitatory current minus the adaptation current, note that this quantity crossing the value of $w_{next}$ (depicted here with a jagged line) marks the transition point from one unit to the next. d) The connectivity matrix where we have included pointers to the three most important quantities $w_{self}$ for the self-excitatory weight, $w_{next}$ for the inhibitory connection to the next element and $w_{rest}$ for the rest of the connections.}
+\caption{An instance of recall in the simple BCPNN neural network. a) Unit activity starting with the cue. b) the time course of the adaptation for each unit. c) the self-excitatory current minus the adaptation current, note that this quantity crossing the value of $w_{next}$ (depicted here with a dotted line) marks the transition point from one unit to the next. d) The connectivity matrix where we have included pointers to the three most important quantities $w_{self}$ for the self-excitatory weight, $w_{next}$ for the inhibitory connection to the next element and $w_{rest}$ for the rest of the connections.}
 \label{fig:bcpnn_simple_recall}
 \end{figure}
 
@@ -251,8 +251,33 @@ We have studied above the effects of the training protocol we can study the effe
 \centering
 \includegraphics[scale=0.30]{recall_noise.pdf}
 \caption{The effects of noise for different connectivity matrices. }
-\label{fig:recall_noise_wiff}
+\label{fig:current_noise}
 \end{figure}
+
+
+\begin{figure}[H]
+\centering
+\includegraphics[scale=0.30]{matrix_noise.pdf}
+\caption{The effects of noise in the connectivity matrix. }
+\label{fig:matrix_noise}
+\end{figure}
+
+\textbf{Noise on scale}
+
+\begin{figure}[H]
+\centering
+\includegraphics[scale=0.30]{minicolumns_recall_noise.pdf}
+\caption{Effect of weight noise on the scaling of the network.}
+\label{fig:current_noise_scale}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[scale=0.30]{matrix_noise_minicolumns.pdf}
+\caption{Effect of current noise on the scaling of the network}
+\label{fig:matrix_noise_scale}
+\end{figure}
+
 
 
 

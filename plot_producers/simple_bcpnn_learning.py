@@ -10,18 +10,12 @@ import seaborn as sns
 
 from network import Protocol, NetworkManager, BCPNNPerfect
 
-run_training_time = True
-run_epochs = True
-run_minicolumns = True
-run_n_patterns = True
+from_pattern = 2
+to_pattern = 3
 
 sns.set(font_scale=3.5)
 sns.set_style(style='white')
-markersize = 32
-linewidth = 10
 
-from_pattern = 2
-to_pattern = 3
 
 def get_weights(manager, from_pattern, to_pattern):
 
@@ -31,8 +25,22 @@ def get_weights(manager, from_pattern, to_pattern):
 
     return w_self, w_next, w_rest
 
+markersize = 32
+linewidth = 10
+run_training_time = True
+run_epochs = True
+run_minicolumns = True
+run_n_patterns = True
+
+############
+# General parameters
+############
+
+always_learning = False
 strict_maximum = True
 perfect = False
+z_transfer = False
+k_perfect = False
 
 g_w_ampa = 2.0
 g_w = 0.0
@@ -40,7 +48,10 @@ g_a = 10.0
 tau_a = 0.250
 G = 1.0
 sigma = 0.0
-
+tau_m = 0.020
+tau_z_pre_ampa = 0.005
+tau_z_post_ampa = 0.005
+tau_p = 10.0
 
 # Patterns parameters
 hypercolumns = 1
@@ -49,7 +60,7 @@ n_patterns = 10
 
 # Manager properties
 dt = 0.001
-values_to_save = ['o', 's']
+values_to_save = ['o']
 
 # Protocol
 training_time = 0.100
@@ -69,9 +80,10 @@ if run_training_time:
     for index, training_time_ in enumerate(training_times_vector):
 
         # Build the network
-        nn = BCPNNPerfect(hypercolumns, minicolumns, g_w_ampa=g_w_ampa, g_w=g_w, g_a=g_a, tau_a=tau_a,
-                          sigma=sigma, G=G,
-                          z_transfer=False, diagonal_zero=False, strict_maximum=strict_maximum, perfect=perfect)
+        nn = BCPNNPerfect(hypercolumns, minicolumns, g_w_ampa=g_w_ampa, g_w=g_w, g_a=g_a, tau_a=tau_a, tau_m=tau_m,
+                          sigma=sigma, G=G, tau_z_pre_ampa=tau_z_pre_ampa, tau_z_post_ampa=tau_z_post_ampa, tau_p=tau_p,
+                          z_transfer=z_transfer, diagonal_zero=False, strict_maximum=strict_maximum, perfect=perfect,
+                          k_perfect=k_perfect, always_learning=always_learning)
 
         # Build the manager
         manager = NetworkManager(nn=nn, dt=dt, values_to_save=values_to_save)
@@ -93,6 +105,7 @@ if run_training_time:
 
     fig1 = plt.figure(figsize=(16, 12))
     ax1 = fig1.add_subplot(111)
+
     ax1.plot(training_times_vector, w_self_vector_tt, 'o-', lw=linewidth, markersize=markersize, label=r'$w_{self}$')
     ax1.plot(training_times_vector, w_next_vector_tt, 'o-', lw=linewidth, markersize=markersize, label=r'$w_{next}$')
     ax1.plot(training_times_vector, w_rest_vector_tt, 'o-', lw=linewidth, markersize=markersize, label=r'$w_{rest}$')
@@ -103,7 +116,7 @@ if run_training_time:
     ax1.axhline(0, ls='--', color='black')
     ax1.axvline(0, ls='--', color='black')
 
-    ax1.legend();
+    ax1.legend()
 
     fig1.savefig('./plot_producers/simple_bcpnn_training_time.pdf', frameon=False, dpi=110, bbox_inches='tight')
 
@@ -111,7 +124,7 @@ if run_training_time:
 # Epochs
 ############
 if run_epochs:
-    epochs_vector = np.arange(1, 40, 2, dtype='int')
+    epochs_vector = np.arange(1, 30, 1, dtype='int')
     w_self_vector_epochs = np.zeros_like(epochs_vector, dtype='float')
     w_next_vector_epochs = np.zeros_like(epochs_vector, dtype='float')
     w_rest_vector_epochs = np.zeros_like(epochs_vector, dtype='float')
@@ -119,9 +132,10 @@ if run_epochs:
     for index, epochs_ in enumerate(epochs_vector):
 
         # Build the network
-        nn = BCPNNPerfect(hypercolumns, minicolumns, g_w_ampa=g_w_ampa, g_w=g_w, g_a=g_a, tau_a=tau_a,
-                          sigma=sigma, G=G,
-                          z_transfer=False, diagonal_zero=False, strict_maximum=strict_maximum, perfect=perfect)
+        nn = BCPNNPerfect(hypercolumns, minicolumns, g_w_ampa=g_w_ampa, g_w=g_w, g_a=g_a, tau_a=tau_a, tau_m=tau_m,
+                          sigma=sigma, G=G, tau_z_pre_ampa=tau_z_pre_ampa, tau_z_post_ampa=tau_z_post_ampa, tau_p=tau_p,
+                          z_transfer=z_transfer, diagonal_zero=False, strict_maximum=strict_maximum, perfect=perfect,
+                          k_perfect=k_perfect, always_learning=always_learning)
 
         # Build the manager
         manager = NetworkManager(nn=nn, dt=dt, values_to_save=values_to_save)
@@ -159,7 +173,7 @@ if run_epochs:
 # Mincolumns
 ########
 if run_minicolumns:
-    minicolumns_vector = np.arange(5, 100, 5, dtype='int')
+    minicolumns_vector = np.arange(10, 82, 2, dtype='int')
     w_self_vector_minicolumns = np.zeros_like(minicolumns_vector, dtype='float')
     w_next_vector_minicolumns = np.zeros_like(minicolumns_vector, dtype='float')
     w_rest_vector_minicolumns = np.zeros_like(minicolumns_vector, dtype='float')
@@ -167,9 +181,10 @@ if run_minicolumns:
     for index, minicolumns_ in enumerate(minicolumns_vector):
 
         # Build the network
-        nn = BCPNNPerfect(hypercolumns, minicolumns_, g_w_ampa=g_w_ampa, g_w=g_w, g_a=g_a, tau_a=tau_a,
-                          sigma=sigma, G=G,
-                          z_transfer=False, diagonal_zero=False, strict_maximum=strict_maximum, perfect=perfect)
+        nn = BCPNNPerfect(hypercolumns, minicolumns_, g_w_ampa=g_w_ampa, g_w=g_w, g_a=g_a, tau_a=tau_a, tau_m=tau_m,
+                          sigma=sigma, G=G, tau_z_pre_ampa=tau_z_pre_ampa, tau_z_post_ampa=tau_z_post_ampa, tau_p=tau_p,
+                          z_transfer=z_transfer, diagonal_zero=False, strict_maximum=strict_maximum, perfect=perfect,
+                          k_perfect=k_perfect, always_learning=always_learning)
 
         # Build the manager
         manager = NetworkManager(nn=nn, dt=dt, values_to_save=values_to_save)
@@ -178,7 +193,8 @@ if run_minicolumns:
         protocol = Protocol()
         patterns_indexes = [i for i in range(minicolumns_)]
         protocol.simple_protocol(patterns_indexes, training_time=training_time, inter_pulse_interval=inter_pulse_interval,
-                                 inter_sequence_interval=inter_sequence_interval, epochs=epochs)
+                                 inter_sequence_interval=inter_sequence_interval, epochs=epochs,
+                                 resting_time=inter_sequence_interval)
 
         # Train
         epoch_history = manager.run_network_protocol(protocol=protocol, verbose=False)
@@ -200,8 +216,7 @@ if run_minicolumns:
     ax3.axhline(0, ls='--', color='black')
     ax3.axvline(0, ls='--', color='black')
 
-
-    ax3.legend();
+    ax3.legend()
     fig3.savefig('./plot_producers/simple_bcpnn_minicolumns.pdf', frameon=False, dpi=110, bbox_inches='tight')
 
 ########
@@ -209,16 +224,18 @@ if run_minicolumns:
 ########
 if run_n_patterns:
 
-    n_patterns_vector = np.arange(10, 100, 5, dtype='int')
+    n_patterns_vector = np.arange(10, 82, 2, dtype='int')
     w_self_vector_patterns = np.zeros_like(n_patterns_vector, dtype='float')
     w_next_vector_patterns = np.zeros_like(n_patterns_vector, dtype='float')
     w_rest_vector_patterns = np.zeros_like(n_patterns_vector, dtype='float')
 
     for index, n_patterns_ in enumerate(n_patterns_vector):
         # Build the network
-        nn = BCPNNPerfect(hypercolumns, n_patterns_vector[-1], g_w_ampa=g_w_ampa, g_w=g_w, g_a=g_a, tau_a=tau_a,
-                          sigma=sigma, G=G,
-                          z_transfer=False, diagonal_zero=False, strict_maximum=strict_maximum, perfect=perfect)
+
+        nn = BCPNNPerfect(hypercolumns, minicolumns=80, g_w_ampa=g_w_ampa, g_w=g_w, g_a=g_a, tau_a=tau_a, tau_m=tau_m,
+                          sigma=sigma, G=G, tau_z_pre_ampa=tau_z_pre_ampa, tau_z_post_ampa=tau_z_post_ampa, tau_p=tau_p,
+                          z_transfer=z_transfer, diagonal_zero=False, strict_maximum=strict_maximum, perfect=perfect,
+                          k_perfect=k_perfect, always_learning=always_learning)
 
         # Build the manager
         manager = NetworkManager(nn=nn, dt=dt, values_to_save=values_to_save)
@@ -227,7 +244,8 @@ if run_n_patterns:
         protocol = Protocol()
         patterns_indexes = [i for i in range(n_patterns_)]
         protocol.simple_protocol(patterns_indexes, training_time=training_time, inter_pulse_interval=inter_pulse_interval,
-                                 inter_sequence_interval=inter_sequence_interval, epochs=epochs)
+                                 inter_sequence_interval=inter_sequence_interval, epochs=epochs,
+                                 resting_time=inter_sequence_interval)
 
         # Train
         epoch_history = manager.run_network_protocol(protocol=protocol, verbose=False)
@@ -242,7 +260,6 @@ if run_n_patterns:
     ax4.plot(n_patterns_vector, w_self_vector_patterns, 'o-', lw=linewidth, markersize=markersize, label=r'$w_{self}$')
     ax4.plot(n_patterns_vector, w_next_vector_patterns, 'o-', lw=linewidth, markersize=markersize, label=r'$w_{next}$')
     ax4.plot(n_patterns_vector, w_rest_vector_patterns, 'o-', lw=linewidth, markersize=markersize, label=r'$w_{rest}$')
-
 
     ax4.set_xlabel('Number of patterns')
     ax4.set_ylabel('Weight')
