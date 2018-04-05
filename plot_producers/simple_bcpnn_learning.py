@@ -9,6 +9,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 import seaborn as sns
 
 from network import Protocol, NetworkManager, BCPNNPerfect
+from analysis_functions import get_weights
 
 from_pattern = 2
 to_pattern = 3
@@ -17,20 +18,16 @@ sns.set(font_scale=3.5)
 sns.set_style(style='white')
 
 
-def get_weights(manager, from_pattern, to_pattern):
-
-    w_self = manager.nn.w_ampa[from_pattern, from_pattern]
-    w_next = manager.nn.w_ampa[to_pattern, from_pattern]
-    w_rest = np.mean(nn.w_ampa[(to_pattern + 1):, from_pattern])
-
-    return w_self, w_next, w_rest
-
-markersize = 32
+markersize = 28
 linewidth = 10
+
 run_training_time = True
 run_epochs = True
 run_minicolumns = True
 run_n_patterns = True
+
+mean = False   # Get the max of the rest of the weights
+num = 30
 
 ############
 # General parameters
@@ -40,7 +37,8 @@ always_learning = False
 strict_maximum = True
 perfect = False
 z_transfer = False
-k_perfect = False
+k_perfect = True
+diagonal_zero = False
 
 g_w_ampa = 2.0
 g_w = 0.0
@@ -51,7 +49,7 @@ sigma = 0.0
 tau_m = 0.020
 tau_z_pre_ampa = 0.005
 tau_z_post_ampa = 0.005
-tau_p = 10.0
+tau_p = 100.0
 
 # Patterns parameters
 hypercolumns = 1
@@ -72,7 +70,7 @@ epochs = 3
 # Training times
 #########
 if run_training_time:
-    training_times_vector = np.arange(0.050, 3.050, 0.150)
+    training_times_vector = np.linspace(0.050, 1.0, num=num)
     w_self_vector_tt = np.zeros_like(training_times_vector)
     w_next_vector_tt = np.zeros_like(training_times_vector)
     w_rest_vector_tt = np.zeros_like(training_times_vector)
@@ -82,7 +80,7 @@ if run_training_time:
         # Build the network
         nn = BCPNNPerfect(hypercolumns, minicolumns, g_w_ampa=g_w_ampa, g_w=g_w, g_a=g_a, tau_a=tau_a, tau_m=tau_m,
                           sigma=sigma, G=G, tau_z_pre_ampa=tau_z_pre_ampa, tau_z_post_ampa=tau_z_post_ampa, tau_p=tau_p,
-                          z_transfer=z_transfer, diagonal_zero=False, strict_maximum=strict_maximum, perfect=perfect,
+                          z_transfer=z_transfer, diagonal_zero=diagonal_zero, strict_maximum=strict_maximum, perfect=perfect,
                           k_perfect=k_perfect, always_learning=always_learning)
 
         # Build the manager
@@ -97,7 +95,7 @@ if run_training_time:
         # Train
         epoch_history = manager.run_network_protocol(protocol=protocol, verbose=False)
 
-        w_self, w_next, w_rest = get_weights(manager, from_pattern, to_pattern)
+        w_self, w_next, w_rest = get_weights(manager, from_pattern, to_pattern, mean=mean)
 
         w_self_vector_tt[index] = w_self
         w_next_vector_tt[index] = w_next
@@ -124,7 +122,7 @@ if run_training_time:
 # Epochs
 ############
 if run_epochs:
-    epochs_vector = np.arange(1, 30, 1, dtype='int')
+    epochs_vector = np.arange(1, 31, 1, dtype='int')
     w_self_vector_epochs = np.zeros_like(epochs_vector, dtype='float')
     w_next_vector_epochs = np.zeros_like(epochs_vector, dtype='float')
     w_rest_vector_epochs = np.zeros_like(epochs_vector, dtype='float')
@@ -134,7 +132,7 @@ if run_epochs:
         # Build the network
         nn = BCPNNPerfect(hypercolumns, minicolumns, g_w_ampa=g_w_ampa, g_w=g_w, g_a=g_a, tau_a=tau_a, tau_m=tau_m,
                           sigma=sigma, G=G, tau_z_pre_ampa=tau_z_pre_ampa, tau_z_post_ampa=tau_z_post_ampa, tau_p=tau_p,
-                          z_transfer=z_transfer, diagonal_zero=False, strict_maximum=strict_maximum, perfect=perfect,
+                          z_transfer=z_transfer, diagonal_zero=diagonal_zero, strict_maximum=strict_maximum, perfect=perfect,
                           k_perfect=k_perfect, always_learning=always_learning)
 
         # Build the manager
@@ -149,7 +147,7 @@ if run_epochs:
         # Train
         epoch_history = manager.run_network_protocol(protocol=protocol, verbose=False)
 
-        w_self, w_next, w_rest = get_weights(manager, from_pattern, to_pattern)
+        w_self, w_next, w_rest = get_weights(manager, from_pattern, to_pattern, mean=mean)
         w_self_vector_epochs[index] = w_self
         w_next_vector_epochs[index] = w_next
         w_rest_vector_epochs[index] = w_rest
@@ -183,7 +181,7 @@ if run_minicolumns:
         # Build the network
         nn = BCPNNPerfect(hypercolumns, minicolumns_, g_w_ampa=g_w_ampa, g_w=g_w, g_a=g_a, tau_a=tau_a, tau_m=tau_m,
                           sigma=sigma, G=G, tau_z_pre_ampa=tau_z_pre_ampa, tau_z_post_ampa=tau_z_post_ampa, tau_p=tau_p,
-                          z_transfer=z_transfer, diagonal_zero=False, strict_maximum=strict_maximum, perfect=perfect,
+                          z_transfer=z_transfer, diagonal_zero=diagonal_zero, strict_maximum=strict_maximum, perfect=perfect,
                           k_perfect=k_perfect, always_learning=always_learning)
 
         # Build the manager
@@ -199,7 +197,7 @@ if run_minicolumns:
         # Train
         epoch_history = manager.run_network_protocol(protocol=protocol, verbose=False)
 
-        w_self, w_next, w_rest = get_weights(manager, from_pattern, to_pattern)
+        w_self, w_next, w_rest = get_weights(manager, from_pattern, to_pattern, mean=mean)
         w_self_vector_minicolumns[index] = w_self
         w_next_vector_minicolumns[index] = w_next
         w_rest_vector_minicolumns[index] = w_rest
@@ -234,7 +232,7 @@ if run_n_patterns:
 
         nn = BCPNNPerfect(hypercolumns, minicolumns=80, g_w_ampa=g_w_ampa, g_w=g_w, g_a=g_a, tau_a=tau_a, tau_m=tau_m,
                           sigma=sigma, G=G, tau_z_pre_ampa=tau_z_pre_ampa, tau_z_post_ampa=tau_z_post_ampa, tau_p=tau_p,
-                          z_transfer=z_transfer, diagonal_zero=False, strict_maximum=strict_maximum, perfect=perfect,
+                          z_transfer=z_transfer, diagonal_zero=diagonal_zero, strict_maximum=strict_maximum, perfect=perfect,
                           k_perfect=k_perfect, always_learning=always_learning)
 
         # Build the manager
@@ -250,7 +248,7 @@ if run_n_patterns:
         # Train
         epoch_history = manager.run_network_protocol(protocol=protocol, verbose=False)
 
-        w_self, w_next, w_rest = get_weights(manager, from_pattern, to_pattern)
+        w_self, w_next, w_rest = get_weights(manager, from_pattern, to_pattern, mean=mean)
         w_self_vector_patterns[index] = w_self
         w_next_vector_patterns[index] = w_next
         w_rest_vector_patterns[index] = w_rest
