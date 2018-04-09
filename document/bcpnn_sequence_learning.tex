@@ -94,7 +94,7 @@ Finally, this system would jump randomly among the states if it were not for a p
 \begin{align}
 \tau_m \dfrac{ds_i}{dt} &= g_{beta}\beta_i + g_{w}\sum_{j} w_{ij} o_j + g_a a_i - s_i \label{eq:simple_bcpnn} \\ 
 o_i &=  \delta_{i, argmax(s)} \label{eq:simple_bcpnn_max} \\ 
-\dfrac{da_i}{dt} &= o_i - a_i \label{eq:simple_bcpnn_adaptation}
+\tau_a \dfrac{da_i}{dt} &= o_i - a_i \label{eq:simple_bcpnn_adaptation}
 \end{align}
 
 In order to illustrate how the dynamics of the system work together we show an example of a successful sequence recall in figure \ref{fig:bcpnn_simple_recall}. In the recall process we cue the first unit of the sequence by clamping it by a short period of time ($\sim 100ms$). We then let the system evolve on its own and, given the right combination of parameters, a sequence is effectively recalled if all the units that conform the pattern are activated in the expected order. 
@@ -244,42 +244,56 @@ We have studied above the effects of the training protocol we can study the effe
 \includegraphics[scale=0.55]{noise_diagram.pdf}
 \caption{A schematic of how noise works in the system.}
 \label{fig:noise_diagram}
-
 \end{figure}
 
 \begin{figure}[H]
-\centering
-\includegraphics[scale=0.30]{recall_noise.pdf}
-\caption{The effects of noise for different connectivity matrices. }
-\label{fig:current_noise}
+    \centering
+    \subfigure[]{{\includegraphics[width=5.5cm]{recall_noise.pdf} }}%
+    \qquad
+    \subfigure[]{{\includegraphics[width=5.5cm]{recall_noise_pt.pdf} }}%
+    \caption{The effects of noise for different connectivity matrices. }
+    \label{fig:current_noise}%
 \end{figure}
 
 
 \begin{figure}[H]
-\centering
-\includegraphics[scale=0.30]{matrix_noise.pdf}
-\caption{The effects of noise in the connectivity matrix. }
-\label{fig:matrix_noise}
+    \centering
+    \subfigure[]{{\includegraphics[width=5.5cm]{matrix_noise.pdf} }}%
+    \qquad
+    \subfigure[]{{\includegraphics[width=5.5cm]{matrix_noise_pt.pdf} }}%
+    \caption{The effects of noise for different connectivity matrices. }
+	\label{fig:matrix_noise}
 \end{figure}
 
 \textbf{Noise on scale}
 
 \begin{figure}[H]
-\centering
-\includegraphics[scale=0.30]{minicolumns_recall_noise.pdf}
-\caption{Effect of weight noise on the scaling of the network.}
-\label{fig:current_noise_scale}
+    \centering
+    \subfigure[]{{\includegraphics[width=5.5cm]{minicolumns_recall_noise.pdf} }}%
+    \qquad
+    \subfigure[]{{\includegraphics[width=5.5cm]{minicolumns_recall_noise_pt.pdf} }}%
+    \caption{The effects of noise for different connectivity matrices. }
+	\label{fig:current_noise_scale}
 \end{figure}
 
 \begin{figure}[H]
-\centering
-\includegraphics[scale=0.30]{matrix_noise_minicolumns.pdf}
-\caption{Effect of current noise on the scaling of the network}
-\label{fig:matrix_noise_scale}
+    \centering
+    \subfigure[]{{\includegraphics[width=5.5cm]{matrix_noise_minicolumns.pdf} }}%
+    \qquad
+    \subfigure[]{{\includegraphics[width=5.5cm]{matrix_noise_minicolumns_pt.pdf} }}%
+	\caption{Effect of weight noise on the scaling of the network}
+	\label{fig:matrix_noise_scale}
 \end{figure}
 
-
-
+\subsection{Robustness of the simple model to different training times}
+\begin{figure}[H]
+    \centering
+    \subfigure[]{{\includegraphics[width=5.5cm]{variance_protocol.pdf} }}%
+    \qquad
+    \subfigure[]{{\includegraphics[width=5.5cm]{variance_protocol_pt.pdf} }}%
+    \caption{Variance on the training protocol}
+	\label{fig:training_time_robustness}
+\end{figure}
 
 \section{The problem Of Complex Sequences}
 Here it is one paper \cite{guyon1988storage}
