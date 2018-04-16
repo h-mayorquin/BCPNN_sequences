@@ -1,5 +1,6 @@
 import random
 import numpy as np
+import scipy as sp
 from connectivity_functions import softmax, get_w_pre_post, get_beta, log_epsilon, strict_max
 from data_transformer import build_ortogonal_patterns
 import IPython
@@ -8,17 +9,20 @@ import IPython
 epoch_end_string = 'epoch_end'
 
 
-class BCPNNModular:
+class BCPNNPerfect:
     def __init__(self, hypercolumns, minicolumns, beta=None, w=None, G=1.0, tau_m=0.020, g_w=1.0, g_w_ampa=1.0, g_beta=1,
-                 tau_z_pre=0.150, tau_z_post=0.005, tau_z_pre_ampa=0.005, tau_z_post_ampa=0.005, tau_p=10.0, tau_k=0.005,
-                 tau_a=2.70, g_a=97.0, g_I=10.0, p=1.0, k=0.0, sigma=1.0, epsilon=1e-20, k_perfect=True, prng=np.random,
-                 diagonal_zero=True, z_transfer=True, always_learning=False):
+                 tau_z_pre=0.150, tau_z_post=0.005, tau_z_pre_ampa=0.005, tau_z_post_ampa=0.005, tau_p=10.0, tau_k=0.010,
+                 tau_a=2.70, g_a=97.0, g_I=100.0, p=1.0, k=0.0, sigma=1.0, epsilon=1e-20, k_perfect=True, prng=np.random,
+                 diagonal_zero=True, z_transfer=True, strict_maximum=True, perfect=True, always_learning=False,
+                 normalized_currents=False):
         # Initial values are taken from the paper on memory by Marklund and Lansner also from Phil's paper
 
         # Random number generator
         self.prng = prng
         self.sigma = sigma
         self.epsilon = epsilon
+        self.always_learning = always_learning
+        self.normalized_current = True
 
         # Network parameters
         self.hypercolumns = hypercolumns
@@ -28,6 +32,8 @@ class BCPNNModular:
 
         self.diagonal_zero = diagonal_zero
         self.z_transfer = z_transfer
+        self.strict_maximum = strict_maximum
+        self.perfect = perfect
 
         # Connectivity
         self.beta = beta
@@ -48,12 +54,10 @@ class BCPNNModular:
         self.g_beta = g_beta
         self.g_I = g_I
 
-        # Learning
         self.k = k
         self.tau_k = tau_k
         self.k_d = 0
         self.k_perfect = k_perfect
-        self.always_learning = always_learning
 
         self.p = p
 
@@ -64,9 +68,9 @@ class BCPNNModular:
 
         # NMDA values
         self.i_nmda = np.zeros(self.n_units)
-        self.z_pre = np.ones(self.n_units) * 1.0 / self.minicolumns
-        self.z_post = np.ones(self.n_units) * 1.0 / self.minicolumns
-        self.z_co = np.ones((self.n_units, self.n_units)) * 1.0 / (self.minicolumns ** 2)
+        self.z_pre = np.zeros(self.n_units) * 1.0 / self.minicolumns
+        self.z_post = np.zeros(self.n_units) * 1.0 / self.minicolumns
+        self.z_co = np.zeros((self.n_units, self.n_units)) * 1.0 / (self.minicolumns ** 2)
         self.p_pre = np.ones(self.n_units) * 1.0 / self.minicolumns
         self.p_post = np.ones(self.n_units) * 1.0 / self.minicolumns
         self.p_co = np.ones((self.n_units, self.n_units)) * 1.0 / (self.minicolumns ** 2)
@@ -74,9 +78,9 @@ class BCPNNModular:
 
         # Ampa values
         self.i_ampa = np.zeros(self.n_units)
-        self.z_pre_ampa = np.ones(self.n_units) * 1.0 / self.minicolumns
-        self.z_post_ampa = np.ones(self.n_units) * 1.0 / self.minicolumns
-        self.z_co_ampa = np.ones((self.n_units, self.n_units)) * 1.0 / (self.minicolumns ** 2)
+        self.z_pre_ampa = np.zeros(self.n_units) * 1.0 / self.minicolumns
+        self.z_post_ampa = np.zeros(self.n_units) * 1.0 / self.minicolumns
+        self.z_co_ampa = np.zeros((self.n_units, self.n_units)) * 1.0 / (self.minicolumns ** 2)
         self.p_pre_ampa = np.ones(self.n_units) * 1.0 / self.minicolumns
         self.p_post_ampa = np.ones(self.n_units) * 1.0 / self.minicolumns
         self.p_co_ampa = np.ones((self.n_units, self.n_units)) * 1.0 / (self.minicolumns ** 2)
@@ -97,7 +101,9 @@ class BCPNNModular:
                       'tau_p': self.tau_p, 'tau_a': self.tau_a, 'g_a': self.g_a, 'g_w': self.g_w,
                       'g_beta': self.g_beta, 'g_I':self.g_I, 'sigma':self.sigma, 'k': self.k,
                       'g_w_ampa': self.g_w_ampa, 'tau_z_post_ampa': self.tau_z_post_ampa,
-                      'tau_z_pre_ampa': self.tau_z_pre_ampa, 'epsilon': self.epsilon, 'G': self.G}
+                      'tau_z_pre_ampa': self.tau_z_pre_ampa, 'epsilon': self.epsilon, 'G': self.G,
+                      'always_learnin': self.always_learning, 'perfect': self.perfect,
+                      'k_perfect': self.k_perfect, 'z_transfer': self.z_transfer}
 
         return parameters
 
@@ -109,18 +115,18 @@ class BCPNNModular:
 
         # NMDA values
         self.i_nmda = np.zeros(self.n_units)
-        self.z_pre = np.ones(self.n_units) * 1.0 / self.minicolumns
-        self.z_post = np.ones(self.n_units) * 1.0 / self.minicolumns
-        self.z_co = np.ones((self.n_units, self.n_units)) * 1.0 / (self.minicolumns ** 2)
+        self.z_pre = np.zeros(self.n_units) * 1.0 / self.minicolumns
+        self.z_post = np.zeros(self.n_units) * 1.0 / self.minicolumns
+        self.z_co = np.zeros((self.n_units, self.n_units)) * 1.0 / (self.minicolumns ** 2)
         self.p_pre = np.ones(self.n_units) * 1.0 / self.minicolumns
         self.p_post = np.ones(self.n_units) * 1.0 / self.minicolumns
         self.p_co = np.ones((self.n_units, self.n_units)) * 1.0 / (self.minicolumns ** 2)
 
         # Ampa values
         self.i_ampa = np.zeros(self.n_units)
-        self.z_pre_ampa = np.ones(self.n_units) * 1.0 / self.minicolumns
-        self.z_post_ampa = np.ones(self.n_units) * 1.0 / self.minicolumns
-        self.z_co_ampa = np.ones((self.n_units, self.n_units)) * 1.0 / (self.minicolumns ** 2)
+        self.z_pre_ampa = np.zeros(self.n_units) * 1.0 / self.minicolumns
+        self.z_post_ampa = np.zeros(self.n_units) * 1.0 / self.minicolumns
+        self.z_co_ampa = np.zeros((self.n_units, self.n_units)) * 1.0 / (self.minicolumns ** 2)
         self.p_pre_ampa = np.ones(self.n_units) * 1.0 / self.minicolumns
         self.p_post_ampa = np.ones(self.n_units) * 1.0 / self.minicolumns
         self.p_co_ampa = np.ones((self.n_units, self.n_units)) * 1.0 / (self.minicolumns ** 2)
@@ -151,20 +157,40 @@ class BCPNNModular:
         if sigma is None:
             sigma = self.prng.normal(0, self.sigma, self.n_units)
 
-        # Updated the probability and the support
-        self.i_nmda = self.g_w * self.w @ self.z_pre
-        self.i_ampa = self.g_w_ampa * self.w_ampa @ self.z_pre_ampa
+        if self.normalized_current:
+            normalized_constant = self.hypercolumns
+        else:
+            normalized_constant = 1.0
 
-        self.s += (dt / self.tau_m) * (self.i_nmda  # NMDA effects
-                                       + self.i_ampa  # Ampa effects
-                                       + self.g_beta * self.beta  # Bias
-                                       + self.g_I * log_epsilon(self.I)  # Input current
-                                       - self.g_a * self.a  # Adaptation
-                                       + sigma  # This last term is the noise
-                                       - self.s)  # s follow all of the s above
+        # Updated the probability and the support
+        if self.z_transfer:
+            self.i_nmda = self.g_w * self.w @ self.z_pre / normalized_constant
+            self.i_ampa = self.g_w_ampa * self.w_ampa @ self.z_pre_ampa / normalized_constant
+        else:
+            self.i_nmda = self.g_w * self.w @ self.o / normalized_constant
+            self.i_ampa = self.g_w_ampa * self.w_ampa @ self.o / normalized_constant
+
+        if self.perfect:
+            self.s = (self.i_nmda  # NMDA effects
+                       + self.i_ampa  # Ampa effects
+                       + self.g_beta * self.beta  # Bias
+                       + self.g_I * self.I  # Input current
+                       - self.g_a * self.a  # Adaptation
+                       + sigma)  # This last term is the noise
+        else:
+            self.s += (dt / self.tau_m) * (self.i_nmda  # NMDA effects
+                                           + self.i_ampa  # Ampa effects
+                                           + self.g_beta * self.beta  # Bias
+                                           + self.g_I * self.I  # Input current
+                                           - self.g_a * self.a  # Adaptation
+                                           + sigma  # This last term is the noise
+                                           - self.s)  # s follow all of the s above
 
         # Soft-max
-        self.o = softmax(self.s, t=self.G, minicolumns=self.minicolumns)
+        if self.strict_maximum:
+            self.o = strict_max(self.s, minicolumns=self.minicolumns)
+        else:
+            self.o = softmax(self.s, t=self.G, minicolumns=self.minicolumns)
 
         # Update the adaptation
         self.a += (dt / self.tau_a) * (self.o - self.a)
@@ -179,7 +205,6 @@ class BCPNNModular:
         self.z_post_ampa += (dt / self.tau_z_post_ampa) * (self.o - self.z_post_ampa)
         self.z_co_ampa = np.outer(self.z_post_ampa, self.z_pre_ampa)
 
-        # If always learning the value of k does not matter
         if self.always_learning:
 
             # Updated the probability of the NMDA connection
@@ -199,10 +224,10 @@ class BCPNNModular:
             self.w = get_w_pre_post(self.p_co, self.p_pre, self.p_post, self.p,
                                     self.epsilon, diagonal_zero=self.diagonal_zero)
 
-        # Otherwise only learnig when k is above epsilon
+            # Otherwise only learnig when k is above epsilon
 
         else:
-        # This determines whether the effects of training kick-in immediatley or have some dynamics of their own
+            # This determines whether the effects of training kick-in immediatley or have some dynamics of their own
             if self.k_perfect:
                 # Updated the probability of the NMDA connection
                 self.p_pre += (dt / self.tau_p) * (self.z_pre - self.p_pre)
@@ -382,9 +407,10 @@ class NetworkManager:
         # Load the clamping if available
         if I is None:
             self.nn.I = np.zeros_like(self.nn.o)
-        else:
+        elif isinstance(I, (float, int)):
             self.nn.I = self.patterns_dic[I]
-
+        else:
+            self.nn.I = I  # The pattern is the input
         # Create a vector of noise
         if self.nn.sigma < self.nn.epsilon:
             noise = np.zeros((time.size, self.nn.n_units))
@@ -624,358 +650,89 @@ class Protocol:
         self.times_sequence = times_sequence
         self.learning_constants_sequence = learning_constant_sequence
 
-    def create_overload_chain(self, number_of_sequences, half_width, units_to_overload):
 
-        chain = []
-        number = 0
-        for dummy_index in range(number_of_sequences):
+class TimedInput:
+    def __init__(self, minicolumns, hypercolumns, network_representation, dt, training_time, inter_pulse_interval=0.0,
+                     inter_sequence_interval=0.0, epochs=1):
 
-            sequence = []
+        self.n_units = network_representation.shape[1]
+        self.dt = dt
 
-            # The first half
-            i = 0
-            while i < half_width:
-                if number in units_to_overload:
-                    number += 1
+        self.network_representation = network_representation
+        self.epochs = epochs
+        self.training_time = training_time
+        self.inter_pulse_interval = inter_pulse_interval
+        self.inter_sequence_interval = inter_sequence_interval
 
-                else:
-                    sequence.append(number)
-                    number += 1
-                    i += 1
+        self.n_patterns = network_representation.shape[0]
+        self.pattern_length = int(training_time / dt)
+        self.inter_pulse_interval_length = int(inter_pulse_interval / dt)
+        self.inter_sequence_interval_length = int(inter_sequence_interval / dt)
 
-            # The overload units in the middle
-            sequence += units_to_overload
-
-            # The second half
-            i = 0
-            while i < half_width:
-                if number in units_to_overload:
-                    number += 1
-                else:
-                    sequence.append(number)
-                    number += 1
-                    i += 1
-
-            chain.append(sequence)
-
-        return chain
-
-    def generate_sample_sequence(self, m, k, p, o, desired_sequences, order=False,
-                                 array_view=False, overlap_view=False, verbose=False, seed=0, tolerance=100000):
-        sequences = []
-        p_array = np.zeros(m, dtype='int')
-        numbers = {i for i in range(m)}
-        random.seed(a=seed)
-        n_sequences = 0
-        count = 0
-
-        while n_sequences < desired_sequences:
-            count += 1
-            if count > tolerance:
-                print('tolerance breanched')
-                print(tolerance)
-                break
-
-            sample = random.sample(numbers, k)
-            # Routine that checks overlap
-            o_flag = True
-            for sequence in sequences:
-                sample_set = set(sample)
-                intersection = len(sample_set.intersection(sequence))
-                if verbose:
-                    print('check overlap')
-                    print(sample_set)
-                    print(sequence)
-                    print(intersection)
-
-                if intersection >= o:
-                    o_flag = False
-
-            # Routine that checks overload
-            p_flag = True
-            for element in sample:
-                if p_array[element] >= p:
-                    p_flag = False
-
-            if verbose:
-                print(sample)
-                print('overlaps')
-                print('p', p_flag)
-                print('o', o_flag)
-                print(sequences)
-                print('---------------')
-
-            # Add to the list of sequences and modify p_array
-            if p_flag and o_flag:
-                sequences.append(sample)
-                n_sequences += 1
-
-                # Modify p-array
-                for element in sample:
-                    p_array[element] += 1
-
-                if verbose:
-                    print('check p_array update')
-                    print(sequences)
-                    print(p_array)
-
-        if order:
-            for sequence in sequences:
-                sequence.sort()
-
-        if array_view:
-            sequence_array = np.zeros((len(sequences), m))
-            for index, sequence in enumerate(sequences):
-                sequence_array[index, sequence] = 1
-
-        if overlap_view:
-            overlap_array = np.zeros((len(sequences), len(sequences)))
-            for index_1, sequence1 in enumerate(sequence_array):
-                for index_2, sequence2 in enumerate(sequence_array):
-                    overlap_array[index_1, index_2] = np.dot(sequence1, sequence2)
-
-        return sequences, p_array, sequence_array, overlap_array
+        self.n_time_total = (self.pattern_length + self.inter_pulse_interval_length) * self.n_patterns
+        self.n_time_total += self.inter_sequence_interval_length
+        self.n_time_total *= epochs
+        self.T_total = epochs * ((training_time + inter_pulse_interval) * self.n_patterns + inter_sequence_interval)
+        self.time = np.linspace(0, self.T_total, num=self.n_time_total)
 
 
-class BCPNNPerfect:
-    def __init__(self, hypercolumns, minicolumns, beta=None, w=None, G=1.0, tau_m=0.020, g_w=1.0, g_w_ampa=1.0, g_beta=1,
-                 tau_z_pre=0.150, tau_z_post=0.005, tau_z_pre_ampa=0.005, tau_z_post_ampa=0.005, tau_p=10.0, tau_k=0.010,
-                 tau_a=2.70, g_a=97.0, g_I=100.0, p=1.0, k=0.0, sigma=1.0, epsilon=1e-20, k_perfect=True, prng=np.random,
-                 diagonal_zero=True, z_transfer=True, strict_maximum=True, perfect=True, always_learning=False):
-        # Initial values are taken from the paper on memory by Marklund and Lansner also from Phil's paper
+        self.S = np.zeros((self.n_units, self.n_time_total))
+        self.z_pre = np.zeros_like(self.S)
+        self.z_post = np.zeros_like(self.S)
+        self.tau_z_pre = None
+        self.tau_z_post = None
 
-        # Random number generator
-        self.prng = prng
-        self.sigma = sigma
-        self.epsilon = epsilon
-        self.always_learning = always_learning
+    def build_timed_input(self):
+        end = 0
+        for epoch in range(self.epochs):
+            for pattern in range(self.n_patterns):
+                start = end
+                end = start + self.pattern_length
+                indexes = np.where(self.network_representation[pattern])[0]
+                self.S[indexes, start:end] = 1
+                end += self.inter_pulse_interval_length
+            end += self.inter_sequence_interval_length
 
-        # Network parameters
-        self.hypercolumns = hypercolumns
-        self.minicolumns = minicolumns
+        return self.S
 
-        self.n_units = self.hypercolumns * self.minicolumns
-
-        self.diagonal_zero = diagonal_zero
-        self.z_transfer = z_transfer
-        self.strict_maximum = strict_maximum
-        self.perfect = perfect
-
-        # Connectivity
-        self.beta = beta
-        self.w = w
-
-        #  Dynamic Parameters
-        self.G = G
-        self.tau_m = tau_m
-        self.tau_z_pre = tau_z_pre
-        self.tau_z_post = tau_z_post
-        self.tau_z_pre_ampa = tau_z_pre_ampa
-        self.tau_z_post_ampa = tau_z_post_ampa
-        self.tau_p = tau_p
-        self.tau_a = tau_a
-        self.g_a = g_a
-        self.g_w = g_w
-        self.g_w_ampa = g_w_ampa
-        self.g_beta = g_beta
-        self.g_I = g_I
-
-        self.k = k
-        self.tau_k = tau_k
-        self.k_d = 0
-        self.k_perfect = k_perfect
-
-        self.p = p
-
-        # State variables
-        self.o = np.zeros(self.n_units) * (1.0 / self.minicolumns)
-        self.s = np.log(np.ones(self.n_units) * (1.0 / self.minicolumns))
-        self.beta = np.log(np.ones_like(self.o) * (1.0 / self.minicolumns))
-
-        # NMDA values
-        self.i_nmda = np.zeros(self.n_units)
-        self.z_pre = np.zeros(self.n_units) * 1.0 / self.minicolumns
-        self.z_post = np.zeros(self.n_units) * 1.0 / self.minicolumns
-        self.z_co = np.zeros((self.n_units, self.n_units)) * 1.0 / (self.minicolumns ** 2)
-        self.p_pre = np.ones(self.n_units) * 1.0 / self.minicolumns
-        self.p_post = np.ones(self.n_units) * 1.0 / self.minicolumns
-        self.p_co = np.ones((self.n_units, self.n_units)) * 1.0 / (self.minicolumns ** 2)
-        self.w = np.zeros((self.n_units, self.n_units))
-
-        # Ampa values
-        self.i_ampa = np.zeros(self.n_units)
-        self.z_pre_ampa = np.zeros(self.n_units) * 1.0 / self.minicolumns
-        self.z_post_ampa = np.zeros(self.n_units) * 1.0 / self.minicolumns
-        self.z_co_ampa = np.zeros((self.n_units, self.n_units)) * 1.0 / (self.minicolumns ** 2)
-        self.p_pre_ampa = np.ones(self.n_units) * 1.0 / self.minicolumns
-        self.p_post_ampa = np.ones(self.n_units) * 1.0 / self.minicolumns
-        self.p_co_ampa = np.ones((self.n_units, self.n_units)) * 1.0 / (self.minicolumns ** 2)
-        self.w_ampa = np.zeros((self.n_units, self.n_units))
-
-        # Set the adaptation to zeros by default
-        self.a = np.zeros_like(self.o)
-        # Set the clamping to zero by default
-        self.I = np.zeros_like(self.o)
-
-    def get_parameters(self):
-        """
-        Get the parameters of the model
-
-        :return: a dictionary with the parameters
-        """
-        parameters = {'tau_m': self.tau_m, 'tau_z_post': self.tau_z_post, 'tau_z_pre': self.tau_z_pre,
-                      'tau_p': self.tau_p, 'tau_a': self.tau_a, 'g_a': self.g_a, 'g_w': self.g_w,
-                      'g_beta': self.g_beta, 'g_I':self.g_I, 'sigma':self.sigma, 'k': self.k,
-                      'g_w_ampa': self.g_w_ampa, 'tau_z_post_ampa': self.tau_z_post_ampa,
-                      'tau_z_pre_ampa': self.tau_z_pre_ampa, 'epsilon': self.epsilon, 'G': self.G,
-                      'always_learnin': self.always_learning, 'perfect': self.perfect,
-                      'k_perfect': self.k_perfect, 'z_transfer': self.z_transfer}
-
-        return parameters
-
-    def reset_values(self, keep_connectivity=True):
-        # State variables
-        self.o = np.zeros(self.n_units) * (1.0 / self.minicolumns)
-        self.s = np.log(np.ones(self.n_units) * (1.0 / self.minicolumns))
-        self.beta = np.log(np.ones_like(self.o) * (1.0 / self.minicolumns))
-
-        # NMDA values
-        self.i_nmda = np.zeros(self.n_units)
-        self.z_pre = np.zeros(self.n_units) * 1.0 / self.minicolumns
-        self.z_post = np.zeros(self.n_units) * 1.0 / self.minicolumns
-        self.z_co = np.zeros((self.n_units, self.n_units)) * 1.0 / (self.minicolumns ** 2)
-        self.p_pre = np.ones(self.n_units) * 1.0 / self.minicolumns
-        self.p_post = np.ones(self.n_units) * 1.0 / self.minicolumns
-        self.p_co = np.ones((self.n_units, self.n_units)) * 1.0 / (self.minicolumns ** 2)
-
-        # Ampa values
-        self.i_ampa = np.zeros(self.n_units)
-        self.z_pre_ampa = np.zeros(self.n_units) * 1.0 / self.minicolumns
-        self.z_post_ampa = np.zeros(self.n_units) * 1.0 / self.minicolumns
-        self.z_co_ampa = np.zeros((self.n_units, self.n_units)) * 1.0 / (self.minicolumns ** 2)
-        self.p_pre_ampa = np.ones(self.n_units) * 1.0 / self.minicolumns
-        self.p_post_ampa = np.ones(self.n_units) * 1.0 / self.minicolumns
-        self.p_co_ampa = np.ones((self.n_units, self.n_units)) * 1.0 / (self.minicolumns ** 2)
-
-
-        # Set the adaptation to zeros by default
-        self.a = np.zeros_like(self.o)
-        # Set the clamping to zero by default
-        self.I = np.zeros_like(self.o)
-
-        if not keep_connectivity:
-            self.beta = np.log(np.ones_like(self.o) * (1.0 / self.minicolumns))
-            self.w = np.zeros((self.n_units, self.n_units))
-            self.w_ampa = np.zeros((self.n_units, self.n_units))
-
-    def randomize_pattern(self):
-        self.o = self.prng.rand(self.n_units)
-        self.s = np.log(self.prng.rand(self.n_units))
-
-        self.z_pre = self.prng.rand(self.n_units)
-        self.z_pre_ampa = self.prng.rand(self.n_units)
-
-        # A follows, if o is randomized sent a to zero.
-        self.a = np.zeros_like(self.o)
-
-    def update_continuous(self, dt=1.0, sigma=None):
-
-        if sigma is None:
-            sigma = self.prng.normal(0, self.sigma, self.n_units)
-
-        # Updated the probability and the support
-        if self.z_transfer:
-            self.i_nmda = self.g_w * self.w @ self.z_pre
-            self.i_ampa = self.g_w_ampa * self.w_ampa @ self.z_pre_ampa
-        else:
-            self.i_nmda = self.g_w * self.w @ self.o
-            self.i_ampa = self.g_w_ampa * self.w_ampa @ self.o
-
-        if self.perfect:
-            self.s = (self.i_nmda  # NMDA effects
-                       + self.i_ampa  # Ampa effects
-                       + self.g_beta * self.beta  # Bias
-                       + self.g_I * self.I  # Input current
-                       - self.g_a * self.a  # Adaptation
-                       + sigma)  # This last term is the noise
-        else:
-            self.s += (dt / self.tau_m) * (self.i_nmda  # NMDA effects
-                                           + self.i_ampa  # Ampa effects
-                                           + self.g_beta * self.beta  # Bias
-                                           + self.g_I * self.I  # Input current
-                                           - self.g_a * self.a  # Adaptation
-                                           + sigma  # This last term is the noise
-                                           - self.s)  # s follow all of the s above
-
-        # Soft-max
-        if self.strict_maximum:
-            self.o = strict_max(self.s, minicolumns=self.minicolumns)
-        else:
-            self.o = softmax(self.s, t=self.G, minicolumns=self.minicolumns)
-
-        # Update the adaptation
-        self.a += (dt / self.tau_a) * (self.o - self.a)
-
-        # Updated the z-traces
-        self.z_pre += (dt / self.tau_z_pre) * (self.o - self.z_pre)
-        self.z_post += (dt / self.tau_z_post) * (self.o - self.z_post)
-        self.z_co = np.outer(self.z_post, self.z_pre)
-
-        # Updated the z-traces AMPA
-        self.z_pre_ampa += (dt / self.tau_z_pre_ampa) * (self.o - self.z_pre_ampa)
-        self.z_post_ampa += (dt / self.tau_z_post_ampa) * (self.o - self.z_post_ampa)
-        self.z_co_ampa = np.outer(self.z_post_ampa, self.z_pre_ampa)
-
-        if self.always_learning:
-
-            # Updated the probability of the NMDA connection
-            self.p_pre += (dt / self.tau_p) * (self.z_pre - self.p_pre)
-            self.p_post += (dt / self.tau_p) * (self.z_post - self.p_post)
-            self.p_co += (dt / self.tau_p) * (self.z_co - self.p_co)
-
-            # Updated the probability of the AMPA connection
-            self.p_pre_ampa += (dt / self.tau_p) * (self.z_pre_ampa - self.p_pre_ampa)
-            self.p_post_ampa += (dt / self.tau_p) * (self.z_post_ampa - self.p_post_ampa)
-            self.p_co_ampa += (dt / self.tau_p) * (self.z_co_ampa - self.p_co_ampa)
-
-            # Update the connectivity
-            self.beta = get_beta(self.p_post, self.epsilon)
-            self.w_ampa = get_w_pre_post(self.p_co_ampa, self.p_pre_ampa, self.p_post_ampa, self.p,
-                                         self.epsilon, diagonal_zero=self.diagonal_zero)
-            self.w = get_w_pre_post(self.p_co, self.p_pre, self.p_post, self.p,
-                                    self.epsilon, diagonal_zero=self.diagonal_zero)
-
-            # Otherwise only learnig when k is above epsilon
-
-        else:
-            # This determines whether the effects of training kick-in immediatley or have some dynamics of their own
-            if self.k_perfect:
-                # Updated the probability of the NMDA connection
-                self.p_pre += (dt / self.tau_p) * (self.z_pre - self.p_pre)
-                self.p_post += (dt / self.tau_p) * (self.z_post - self.p_post)
-                self.p_co += (dt / self.tau_p) * (self.z_co - self.p_co)
-
-                # Updated the probability of the AMPA connection
-                self.p_pre_ampa += (dt / self.tau_p) * (self.z_pre_ampa - self.p_pre_ampa)
-                self.p_post_ampa += (dt / self.tau_p) * (self.z_post_ampa - self.p_post_ampa)
-                self.p_co_ampa += (dt / self.tau_p) * (self.z_co_ampa - self.p_co_ampa)
-
+    def build_filtered_input_pre(self, tau_z):
+        self.tau_z_pre = tau_z
+        for index, s in enumerate(self.S.T):
+            if index == 0:
+                self.z_pre[:, index] = (self.dt / tau_z) * (s - 0)
             else:
-                self.k_d += (dt / self.tau_k) * (self.k - self.k_d)
+                self.z_pre[:, index] = self.z_pre[:, index - 1] + (self.dt / tau_z) * (s - self.z_pre[:, index - 1])
 
-                # Updated the probability of the NMDA connection
-                self.p_pre += (dt / self.tau_p) * (self.z_pre - self.p_pre) * self.k_d
-                self.p_post += (dt / self.tau_p) * (self.z_post - self.p_post) * self.k_d
-                self.p_co += (dt / self.tau_p) * (self.z_co - self.p_co) * self.k_d
+        return self.z_pre
 
-                # Updated the probability of AMPA connection
-                self.p_pre_ampa += (dt / self.tau_p) * (self.z_pre_ampa - self.p_pre_ampa) * self.k_d
-                self.p_post_ampa += (dt / self.tau_p) * (self.z_post_ampa - self.p_post_ampa) * self.k_d
-                self.p_co_ampa += (dt / self.tau_p) * (self.z_co_ampa - self.p_co_ampa) * self.k_d
+    def build_filtered_input_post(self, tau_z):
+        self.tau_z_post = tau_z
+        for index, s in enumerate(self.S.T):
+            if index == 0:
+                self.z_post[:, index] = (self.dt / tau_z) * (s - 0)
+            else:
+                self.z_post[:, index] = self.z_post[:, index - 1] + (self.dt / tau_z) * (s - self.z_post[:, index - 1])
 
-            if self.k > self.epsilon:
-                self.beta = get_beta(self.p_post, self.epsilon)
-                self.w_ampa = get_w_pre_post(self.p_co_ampa, self.p_pre_ampa, self.p_post_ampa, self.p,
-                                             self.epsilon, diagonal_zero=self.diagonal_zero)
-                self.w = get_w_pre_post(self.p_co, self.p_pre, self.p_post, self.p,
-                                        self.epsilon, diagonal_zero=self.diagonal_zero)
+        return self.z_post
+
+    def calculate_probabilities_from_time_signal(self, filtered=False):
+        if filtered:
+            y_pre = self.z_pre
+            y_post = self.z_post
+        else:
+            y_pre = self.S
+            y_post = self.S
+
+        n_units = self.n_units
+        n_time_total = self.n_time_total
+
+        p_pre = sp.integrate.simps(y=y_pre, x=self.time, axis=1) / self.T_total
+        p_post = sp.integrate.simps(y=y_post, x=self.time, axis=1) / self.T_total
+
+        outer_product = np.zeros((n_units, n_units, n_time_total))
+        for index, (s_pre, s_post) in enumerate(zip(y_pre.T, y_post.T)):
+            outer_product[:, :, index] = s_post[:, np.newaxis] @ s_pre[np.newaxis, :]
+
+        P = sp.integrate.simps(y=outer_product, x=self.time, axis=2) / self.T_total
+
+        return p_pre, p_post, P

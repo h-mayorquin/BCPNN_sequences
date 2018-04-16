@@ -9,7 +9,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 import seaborn as sns
 
 from network import Protocol, NetworkManager, BCPNNPerfect
-from analysis_functions import get_weights
+from analysis_functions import get_weights, calculate_recall_time_quantities
 
 from_pattern = 2
 to_pattern = 3
@@ -18,7 +18,7 @@ sns.set(font_scale=3.5)
 sns.set_style(style='white')
 
 
-markersize = 28
+markersize = 24
 linewidth = 10
 
 run_training_time = True
@@ -27,6 +27,8 @@ run_minicolumns = True
 run_n_patterns = True
 
 mean = False   # Get the max of the rest of the weights
+plot_success = True
+
 num = 30
 
 ############
@@ -47,8 +49,8 @@ tau_a = 0.250
 G = 1.0
 sigma = 0.0
 tau_m = 0.020
-tau_z_pre_ampa = 0.005
-tau_z_post_ampa = 0.005
+tau_z_pre_ampa = 0.025
+tau_z_post_ampa = 0.025
 tau_p = 100.0
 
 # Patterns parameters
@@ -66,6 +68,11 @@ inter_sequence_interval = 1.0
 inter_pulse_interval = 0.0
 epochs = 3
 
+# Recall
+T_recall = 3.0
+T_cue = 0.100
+n = 1
+
 #########
 # Training times
 #########
@@ -74,6 +81,7 @@ if run_training_time:
     w_self_vector_tt = np.zeros_like(training_times_vector)
     w_next_vector_tt = np.zeros_like(training_times_vector)
     w_rest_vector_tt = np.zeros_like(training_times_vector)
+    successes = np.zeros_like(training_times_vector)
 
     for index, training_time_ in enumerate(training_times_vector):
 
@@ -101,12 +109,21 @@ if run_training_time:
         w_next_vector_tt[index] = w_next
         w_rest_vector_tt[index] = w_rest
 
+        if plot_success:
+            sequences = [patterns_indexes]
+            aux = calculate_recall_time_quantities(manager, T_recall, T_cue, n, sequences)
+            total_sequence_time, mean, std, success, timings = aux
+            successes[index] = success
+
     fig1 = plt.figure(figsize=(16, 12))
     ax1 = fig1.add_subplot(111)
 
     ax1.plot(training_times_vector, w_self_vector_tt, 'o-', lw=linewidth, markersize=markersize, label=r'$w_{self}$')
     ax1.plot(training_times_vector, w_next_vector_tt, 'o-', lw=linewidth, markersize=markersize, label=r'$w_{next}$')
     ax1.plot(training_times_vector, w_rest_vector_tt, 'o-', lw=linewidth, markersize=markersize, label=r'$w_{rest}$')
+
+    if plot_success:
+        ax1.plot(training_times_vector, successes / 100, '--', color='black', lw=linewidth, markersize=markersize)
 
     ax1.set_xlabel('Training times (s)')
     ax1.set_ylabel('Weight')
@@ -126,6 +143,7 @@ if run_epochs:
     w_self_vector_epochs = np.zeros_like(epochs_vector, dtype='float')
     w_next_vector_epochs = np.zeros_like(epochs_vector, dtype='float')
     w_rest_vector_epochs = np.zeros_like(epochs_vector, dtype='float')
+    successes = np.zeros_like(epochs_vector, dtype='float')
 
     for index, epochs_ in enumerate(epochs_vector):
 
@@ -152,11 +170,20 @@ if run_epochs:
         w_next_vector_epochs[index] = w_next
         w_rest_vector_epochs[index] = w_rest
 
+        if plot_success:
+            sequences = [patterns_indexes]
+            aux = calculate_recall_time_quantities(manager, T_recall, T_cue, n, sequences)
+            total_sequence_time, mean, std, success, timings = aux
+            successes[index] = success
+
     fig2 = plt.figure(figsize=(16, 12))
     ax2 = fig2.add_subplot(111)
     ax2.plot(epochs_vector, w_self_vector_epochs, 'o-', lw=linewidth, markersize=markersize, label=r'$w_{self}$')
     ax2.plot(epochs_vector, w_next_vector_epochs, 'o-', lw=linewidth, markersize=markersize, label=r'$w_{next}$')
     ax2.plot(epochs_vector, w_rest_vector_epochs, 'o-', lw=linewidth, markersize=markersize, label=r'$w_{rest}$')
+
+    if plot_success:
+        ax2.plot(epochs_vector, successes / 100, '--', color='black', lw=linewidth, markersize=markersize)
 
     ax2.set_xlabel('Epochs')
     ax2.set_ylabel('Weight')

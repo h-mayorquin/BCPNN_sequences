@@ -25,14 +25,14 @@ figsize = (16, 12)
 alpha = 0.25
 
 num = 25
-trials = 200
+trials = 10
 failure_treshold = 0.5  # Only take into account the examples that succed in 70 per cent of the recalls
 
-recall_noise_perfect = True
+recall_noise_perfect = False
 recall_noise = True
-matrix_noise = True
-minicolumns_recall_noise = True
-minicolumns_matrix_noise = True
+matrix_noise = False
+minicolumns_recall_noise = False
+minicolumns_matrix_noise = False
 
 ######
 # General parameters
@@ -44,22 +44,22 @@ k_perfect = True
 strict_maximum = True
 z_transfer = False
 perfect = False
-diagonal_zero = False
+diagonal_zero = True
 
 # First we run the training protocol
 g_w_ampa = 1.5
 g_w = 0.0
-g_a = 10.0
+g_a = 20.0
 tau_a = 0.250
 G = 1.0
 sigma = 0.0
 tau_m = 0.020
-tau_z_pre_ampa = 0.005
-tau_z_post_ampa = 0.005
+tau_z_pre_ampa = 0.025
+tau_z_post_ampa = 0.025
 tau_p = 10.0
 
 # Patterns parameters
-hypercolumns = 1
+hypercolumns = 4
 minicolumns = 10
 n_patterns = 10
 
