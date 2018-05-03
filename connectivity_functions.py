@@ -37,6 +37,7 @@ def calculate_coactivations(patterns):
 
     return coactivations
 
+
 def create_orthogonal_canonical_representation(minicolumns, hypercolumns):
     aux = []
     for i in range(minicolumns):
@@ -55,7 +56,8 @@ def build_network_representation(matrix, minicolumns, hypercolumns):
 
     return network_representation
 
-def get_weights_from_probabilities(pi, pj, pij, minicolumns, hypercolumns, small_number=10e-3):
+
+def get_weights_from_probabilities(pi, pj, pij, minicolumns, hypercolumns, small_number=10e-10):
 
     n_units = minicolumns * hypercolumns
 
@@ -66,7 +68,7 @@ def get_weights_from_probabilities(pi, pj, pij, minicolumns, hypercolumns, small
     w = np.zeros((n_units, n_units))
     for index1, p1 in enumerate(pi):
         for index2, p2 in enumerate(pj):
-            if p1==0 or p2==0:
+            if p1 == 0 or p2 == 0:
                 w[index1, index2] = 1.0
             elif pij[index1, index2] < small_number:
                 w[index1, index2] = small_number
@@ -75,7 +77,7 @@ def get_weights_from_probabilities(pi, pj, pij, minicolumns, hypercolumns, small
 
     w = np.log(w)
 
-    return w
+    return w, beta
 
 
 def get_probabilities_from_network_representation(network_representation):

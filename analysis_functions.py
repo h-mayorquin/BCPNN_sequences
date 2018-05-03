@@ -1,6 +1,25 @@
 import numpy as np
 
 
+def get_weights_collections(w, sequence):
+    w_self_vector = w[np.diag_indices_from(w)]
+    w_next_vector = []
+
+    for index, pattern in enumerate(sequence[:-1]):
+        from_pattern = sequence[index]
+        to_pattern = sequence[index + 1]
+        w_next_vector.append(w[to_pattern, from_pattern])
+
+    w_next_vector = np.array(w_next_vector)
+    w_rest_matrix = np.zeros((len(sequence) - 1, len(sequence) - 2))
+
+    for index, pattern in enumerate(sequence[:-1]):
+        aux = [x for x in sequence if x not in [pattern, sequence[index + 1]]]
+        w_rest_matrix[index, :] = w[index, aux]
+
+    return w_self_vector, w_next_vector, w_rest_matrix
+
+
 def get_weights(manager, from_pattern, to_pattern, mean=True):
 
     w_self = manager.nn.w_ampa[from_pattern, from_pattern]

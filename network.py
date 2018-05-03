@@ -652,8 +652,8 @@ class Protocol:
 
 
 class TimedInput:
-    def __init__(self, minicolumns, hypercolumns, network_representation, dt, training_time, inter_pulse_interval=0.0,
-                     inter_sequence_interval=0.0, epochs=1):
+    def __init__(self, network_representation, dt, training_time, inter_pulse_interval=0.0,
+                     inter_sequence_interval=0.0, resting_time=0, epochs=1):
 
         self.n_units = network_representation.shape[1]
         self.dt = dt
@@ -663,18 +663,27 @@ class TimedInput:
         self.training_time = training_time
         self.inter_pulse_interval = inter_pulse_interval
         self.inter_sequence_interval = inter_sequence_interval
+        self.resting_time = resting_time
 
         self.n_patterns = network_representation.shape[0]
         self.pattern_length = int(training_time / dt)
         self.inter_pulse_interval_length = int(inter_pulse_interval / dt)
         self.inter_sequence_interval_length = int(inter_sequence_interval / dt)
+        self.resting_time_length = int(resting_time / dt)
 
+        # Add the patterns and the pulse
         self.n_time_total = (self.pattern_length + self.inter_pulse_interval_length) * self.n_patterns
+        # Add the inter-sequence-time
         self.n_time_total += self.inter_sequence_interval_length
-        self.n_time_total *= epochs
-        self.T_total = epochs * ((training_time + inter_pulse_interval) * self.n_patterns + inter_sequence_interval)
-        self.time = np.linspace(0, self.T_total, num=self.n_time_total)
+        # Add this epochs - 1 times
+        self.n_time_total *= (epochs - 1)
+        # Add the patterns and the pulse again
+        self.n_time_total += (self.pattern_length + self.inter_pulse_interval_length) * self.n_patterns
+        # Add the resting time
+        self.n_time_total += self.resting_time_length
 
+        self.T_total = self.n_time_total * self.dt
+        self.time = np.linspace(0, self.T_total, num=self.n_time_total)
 
         self.S = np.zeros((self.n_units, self.n_time_total))
         self.z_pre = np.zeros_like(self.S)
