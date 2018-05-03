@@ -10,6 +10,14 @@
 \usepackage{framed}
 \usepackage{xcolor}
 
+\usepackage{hyperref}
+\hypersetup{
+  colorlinks   = true, %Colours links instead of ugly boxes
+  urlcolor     = red, %Colour for external hyperlinks
+  linkcolor    = blue, %Colour of internal links
+  citecolor   = blue %Colour of citations
+}
+
 \usepackage{graphicx}
 \graphicspath{{images/}}
 
@@ -49,7 +57,25 @@ Explanation of what is the BCPNN, where does it come from, and some applications
 \label{fig:bcpnn_probabilities}
 \end{figure}
 
+\begin{align}
+p_i &= \frac{1}{N}\sum_{\mu=0}^{N} S_i^{\mu} \label{eq:prob_counting} \\  
+p_{ij} &= \frac{1}{N} \sum_{\mu=0}^N S_i^{\mu} S_j^{\mu} \label{eq:prob_counting_co}
+\end{align}
 
+\begin{align}
+\beta_i &=  \begin{cases}
+       \log(p_i),&  p_i > 0,\\
+       \log(\epsilon),& p_i = 0.0
+    \end{cases} \label{eq:bcpnn_beta} \\
+w &= \begin{cases}
+       0 ,&  p_i=0 \text{ or } p_j = 0,\\
+       \log(\epsilon),& p_{ij} = 0.0 \\
+       \log(\frac{p_{ij}}{p_i p_j}),&  \text{otherwise}  
+    \end{cases} \label{eq:bcpnn_w}
+\end{align}
+
+Where $\epsilon$ is a small number chosen out of convenience to avoid the fact that $log$ is not defined for $0$. 
+ 
 
 \subsection{A simple phenomenological theory of sequence recall}
 Successful sequence recall dynamics can be described as three dynamical qualities and their interplay: fixation, erosion and biased transition. 
@@ -69,10 +95,10 @@ Examples of biased transition
 Biased by similiarty \cite{recanatesi2017memory}
 
 
-\section{The BCPNN as a Sequence Learner}
+\section{The BCPNN as a Sequence Learning Network}
 First we can show that the BCPNN can be used do incremental learning \cite{sandberg2002bayesian}. And in particular there is a spike model that can be used to learn sequences \cite{tully2016spike}. 
 
-\subsection{Sequence Learning with only one type of connectivity}
+\subsection{Sequence Recall}
 In order to test test the capabilities of the BCPNN neural network as a sequence learning mechanism we will start with a minimal model of it. The idea here is to show the minimal conditions under which the system can successfully reproduce sequential activity and isolate how the parameters and properties of the network interact with each other. After we are equipped with this knowledge we will add more parts to the model and this in turn will provide new capabilities that we will explore later. 
 
 Using the phenomenology presented before, we will explain how the structure of the network in figure \ref{fig:bcpnn_simple_network} and the dynamical equations of the system intertwine to achieve, fixation, erosion and biased transition altogether. 
@@ -92,7 +118,7 @@ After a particular unit is activated the adaptation current in equations \ref{eq
 Finally, this system would jump randomly among the states if it were not for a proper mechanism of biased transition. This is accomplished with differential inhibitory weights (illustrated in figure \ref{fig:bcpnn_simple_network} as different widths for the blue inhibitory connections) that become more and more inhibitory the farther two units are in the sequence. This ensures that once the adaptation currents for a unit becomes big enough the next unit which is the less inhibited one wins the competition and gets prompted to activation by the winner-takes-all mechanism.  
 
 \begin{align}
-\tau_m \dfrac{ds_i}{dt} &= g_{beta}\beta_i + g_{w}\sum_{j} w_{ij} o_j + g_a a_i - s_i \label{eq:simple_bcpnn} \\ 
+\tau_m \dfrac{ds_i}{dt} &= g_{beta}\beta_i + g_{w}\sum_{j} w_{ij} o_j  - g_a a_i - s_i \label{eq:simple_bcpnn} \\ 
 o_i &=  \delta_{i, argmax(s)} \label{eq:simple_bcpnn_max} \\ 
 \tau_a \dfrac{da_i}{dt} &= o_i - a_i \label{eq:simple_bcpnn_adaptation}
 \end{align}
@@ -112,7 +138,7 @@ It is important to note that in this case we utilized a tailor-made connectivity
 We will now proceed to characterize the properties of the simplified version of the BCPNN. We will do this in two steps, first we will explain the recall properties of the system and then we will proceed to describe the learning rule and its dynamics. One of the most important quantities of sequence recall network is the \textbf{persistence time.} of a a state. It turns out than in this simple system by determining the recall time with regards to certain parameters we can explain both how the network works and when the recall is carried out successfully.
 
 
-\subsubsection{Recall properties}
+\subsubsection{Persistence Time}
 If we have system with only one type of connectivity, and winner-takes-all selectivity one state will be suppressed in favor of the other as soon as the support of the second state is bigger. In more detail, if we start with a system where the first unit is activated its own support will be $s_1 = g w_{self} - a(t)$ where a is the adaptation current which grows in time. This will continue as long as the first unit is activated and as a consequence the support for the unit will be decreasing. On the other hand the second unit is receiving a constant current to its support $s_2 = g w_{next}$, if this process continues by continuity there will be a point when the support of the first unit will be equal to that of the second:
 
 \begin{align*}
@@ -154,7 +180,266 @@ If we look at the denominator of equation \ref{eq:simple_bcpnn_persistence_time}
 \textbf{Next weight value}
 In order to quantify the effects of varying $w_{next}$ we fixed the value of $w_{self}$ to $1$. With this perspective on mind, the farther $w_{next}$ is from 1 (the red line on the right) the biggest is the weight differential and using the same reasoning that we used for the effects of $g_w$ above we conclude increasing persistent time and a singularity when the difference becomes big enough (red line to the left). 
 
-\subsubsection{Learning Properties}
+\subsection{Sequence Learning}
+\subsubsection{Off-line learning rule}
+
+In order for the BCPNN to learn from temporal patterns a first step is to generalize the rules given in equations \ref{eq:prob_counting_co} and \ref{eq:prob_counting_co} to cope with continuous signal. We propose here the following equations:
+
+\begin{align}
+p_i = \frac{1}{T}\int_0^{T} S_i(t) dt  \label{eq:bcpnn_off_line_prob} \\
+p_{ij} = \frac{1}{T}\int_0^{T} S_i(t) S_j(t) dt \label{eq:bcpnn_off_line_joint} 
+\end{align}
+
+Where  $T$ is the total presentation time. Note that this rules are a direct generalization of the discrete rules and can be reduced to them under the appropriate conditions, nevertheless they can deal directly deal with patterns of different duration and with incomplete activation in a way that is consistent with the normal rule. Once we have calculated the probabilities from the complete signal in the equations above we can use the $p_i$ and $p_ij$ quantities to estimate $w$ and $\beta$ using equations \ref{eq:bcpnn_w} and \ref{eq:bcpnn_beta}. 
+
+In figure \ref{fig:off_line_rule_signal} we illustrate how a collection of patterns presented in succession (left) look as continuous signals over time. 
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=10.5cm]{off_line_rule_illustration_signal.pdf} 
+	\label{fig:off_line_rule_signal}
+	\caption{left: a collection of patterns presented to the neural network. right) The same set of patterns }
+\end{figure}
+
+In figure \ref{fig:off_line_rule_weights} we compare the both the weights $w$ and the co-activations $p_ij$ estimated from both the rule for discrete signals and the continuous signals. As we can appreciate the results are the same in both cases.
+
+\begin{figure}[H]
+    \centering
+     \includegraphics[width=10.5cm]{off_line_rule_illustration_weight.pdf} %
+	\label{fig:off_line_rule_weights}
+	\caption{left) estimation of both co-activations and $w$ for the discrete presentation of patterns. right) estimation of both co-activations and $w$ for the continuous signal. }
+\end{figure}
+
+Finally if we assume that we are estimating the probabilities from signals whose information is delay and interpreted through a window of time 
+
+\begin{align}
+z(t) &= \frac{1}{\tau_z } \int_{-\infty}^{t} s(\tau) e^{-\frac{t - \tau}{\tau_z}} d\tau \label{eq:flitering} 
+\end{align}
+
+
+\begin{figure}[H]
+    \centering
+  \includegraphics[width=10.5cm]{off_line_rule_illustration_filter.pdf} %
+	\label{fig:off_line_rule_filter}
+\end{figure}
+
+An example of such filtering of the signal is illustrated on figure \ref{fig:off_line_rule_filter}. In the figure we can appreciate that the signal ``leaks' on time and as a consequence there is some overlap between patterns that are contiguous on time where before there was none. It follows from there that the co-activations and in consequence the connectivity $w$ will connect patterns that are close on time as illustrated on figure \ref{fig:off_line_rule_filters_weights}
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=10.5cm]{off_line_rule_illustration_weight_filtered.pdf}
+	\label{fig:off_line_rule_filters_weights}
+\end{figure}
+
+\textbf{Training time}
+
+\begin{figure}[H]
+    \centering
+    \subfigure[]{{\includegraphics[width=5.5cm]{off_line_rule_learning_training_time_w.pdf} }}%
+    \qquad
+    \subfigure[]{{\includegraphics[width=5.5cm]{off_line_rule_learning_training_time_p.pdf} }}%
+    \caption{Results of training with different training times. a) The weights after training. b) probabilities after training.}
+    \label{fig:off_line_learning_training_time}%
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \subfigure[]{{\includegraphics[width=5.5cm]{off_line_rule_learning_training_time_time.pdf} }}%
+    \qquad
+    \subfigure[]{{\includegraphics[width=5.5cm]{off_line_rule_learning_training_time_diff.pdf} }}%
+    \caption{Results of training with different training times. a) The weights after training. b) probabilities after training.}
+    \label{fig:off_line_learning_training_time2}%
+\end{figure}
+
+
+$\mathbf{\tau_z}$
+
+\begin{figure}[H]
+    \centering
+    \subfigure[]{{\includegraphics[width=5.5cm]{off_line_rule_learning_tau_z_w.pdf} }}%
+    \qquad
+    \subfigure[]{{\includegraphics[width=5.5cm]{off_line_rule_learning_tau_z_p.pdf} }}%
+    \caption{Results of training with different values of $\tau_z$. a) The weights after training. b) probabilities after training.}
+    \label{fig:off_line_learning_tau_z}%
+\end{figure}
+
+
+\begin{figure}[H]
+    \centering
+    \subfigure[]{{\includegraphics[width=5.5cm]{off_line_rule_learning_tau_z_time.pdf} }}%
+    \qquad
+    \subfigure[]{{\includegraphics[width=5.5cm]{off_line_rule_learning_tau_z_diff.pdf} }}%
+    \caption{Results of training with different training times. a) The weights after training. b) probabilities after training.}
+    \label{fig:off_line_learning_tau_z2}%
+\end{figure}
+
+\textbf{Epochs}
+
+\begin{figure}[H]
+    \centering
+    \subfigure[]{{\includegraphics[width=5.5cm]{off_line_rule_learning_epochs_w.pdf} }}%
+    \qquad
+    \subfigure[]{{\includegraphics[width=5.5cm]{off_line_rule_learning_epochs_p.pdf} }}%
+    \caption{Results of training with different number of epochs. a) The weights after training. b) probabilities after training.}
+    \label{fig:off_line_learning_epochs}%
+\end{figure}
+
+
+\begin{figure}[H]
+    \centering
+    \subfigure[]{{\includegraphics[width=5.5cm]{off_line_rule_learning_epochs_time.pdf} }}%
+    \qquad
+    \subfigure[]{{\includegraphics[width=5.5cm]{off_line_rule_learning_epochs_diff.pdf} }}%
+    \caption{Results of training with different training times. a) The weights after training. b) probabilities after training.}
+    \label{fig:off_line_learning_epochs2}%
+\end{figure}
+
+
+\textbf{Inter Sequence Interval}
+
+\begin{figure}[H]
+    \centering
+    \subfigure[]{{\includegraphics[width=5.5cm]{off_line_rule_learning_ISI_w.pdf} }}%
+    \qquad
+    \subfigure[]{{\includegraphics[width=5.5cm]{off_line_rule_learning_ISI_p.pdf} }}%
+    \caption{Results of training with different values of the inter sequence interval. a) The weights after training. b) probabilities after training.}
+    \label{fig:off_line_learning_ISI}%
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \subfigure[]{{\includegraphics[width=5.5cm]{off_line_rule_learning_ISI_time.pdf} }}%
+    \qquad
+    \subfigure[]{{\includegraphics[width=5.5cm]{off_line_rule_learning_ISI_diff.pdf} }}%
+    \caption{Results of training with different training times. a) The weights after training. b) probabilities after training.}
+    \label{fig:off_line_learning_ISI2}%
+\end{figure}
+
+
+\textbf{Inter Pulse Interval}
+
+\begin{figure}[H]
+    \centering
+    \subfigure[]{{\includegraphics[width=5.5cm]{off_line_rule_learning_IPI_w.pdf} }}%
+    \qquad
+    \subfigure[]{{\includegraphics[width=5.5cm]{off_line_rule_learning_IPI_p.pdf} }}%
+    \caption{Results of training with different values of the inter pulse interval. a) The weights after training. b) probabilities after training.}
+    \label{fig:off_line_learning_IPI}%
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \subfigure[]{{\includegraphics[width=5.5cm]{off_line_rule_learning_IPI_time.pdf} }}%
+    \qquad
+    \subfigure[]{{\includegraphics[width=5.5cm]{off_line_rule_learning_IPI_diff.pdf} }}%
+    \caption{Results of training with different training times. a) The weights after training. b) probabilities after training.}
+    \label{fig:off_line_learning_IPI2}%
+\end{figure}
+
+\textbf{Resting Time}
+
+\begin{figure}[H]
+    \centering
+    \subfigure[]{{\includegraphics[width=5.5cm]{off_line_rule_learning_resting_w.pdf} }}%
+    \qquad
+    \subfigure[]{{\includegraphics[width=5.5cm]{off_line_rule_learning_resting_p.pdf} }}%
+    \caption{Results of training with different values of resting time. a) The weights after training. b) probabilities after training.}
+    \label{fig:off_line_learning_resting}%
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \subfigure[]{{\includegraphics[width=5.5cm]{off_line_rule_learning_resting_time.pdf} }}%
+    \qquad
+    \subfigure[]{{\includegraphics[width=5.5cm]{off_line_rule_learning_resting_diff.pdf} }}%
+    \caption{Results of training with different training times. a) The weights after training. b) probabilities after training.}
+    \label{fig:off_line_learning_resting2}%
+\end{figure}
+
+\textbf{Minicolumns}
+
+\begin{figure}[H]
+    \centering
+    \subfigure[]{{\includegraphics[width=5.5cm]{off_line_rule_learning_minicolumns_var_w.pdf} }}%
+    \qquad
+    \subfigure[]{{\includegraphics[width=5.5cm]{off_line_rule_learning_minicolumns_var_p.pdf} }}%
+    \caption{Results of training with different values of resting time. a) The weights after training. b) probabilities after training.}
+    \label{fig:off_line_learning_minicolumns_var}%
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \subfigure[]{{\includegraphics[width=5.5cm]{off_line_rule_learning_minicolumns_var_time.pdf} }}%
+    \qquad
+    \subfigure[]{{\includegraphics[width=5.5cm]{off_line_rule_learning_minicolumns_var_diff.pdf} }}%
+    \caption{Results of training with different training times. a) The weights after training. b) probabilities after training.}
+    \label{fig:off_line_learning_minicolumns_var2}%
+\end{figure}
+
+\textbf{Minicolumns - fixed sequence}
+
+\begin{figure}[H]
+    \centering
+    \subfigure[]{{\includegraphics[width=5.5cm]{off_line_rule_learning_minicolumns_fixed_w.pdf} }}%
+    \qquad
+    \subfigure[]{{\includegraphics[width=5.5cm]{off_line_rule_learning_minicolumns_fixed_p.pdf} }}%
+    \caption{Results of training with different values of resting time. a) The weights after training. b) probabilities after training.}
+    \label{fig:off_line_learning_minicolumns_fixed}%
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \subfigure[]{{\includegraphics[width=5.5cm]{off_line_rule_learning_minicolumns_fixed_time.pdf} }}%
+    \qquad
+    \subfigure[]{{\includegraphics[width=5.5cm]{off_line_rule_learning_minicolumns_fixed_diff.pdf} }}%
+    \caption{Results of training with different values of resting time. a) The weights after training. b) probabilities after training.}
+    \label{fig:off_line_learning_minicolumns_fixed2}%
+\end{figure}
+
+\textbf{Hypercolumns}
+
+\begin{figure}[H]
+    \centering
+    \subfigure[]{{\includegraphics[width=5.5cm]{off_line_rule_learning_hypercolumns_w.pdf} }}%
+    \qquad
+    \subfigure[]{{\includegraphics[width=5.5cm]{off_line_rule_learning_hypercolumns_p.pdf} }}%
+    \caption{Results of training with different values of resting time. a) The weights after training. b) probabilities after training.}
+    \label{fig:off_line_learning_hypercolumns}%
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \subfigure[]{{\includegraphics[width=5.5cm]{off_line_rule_learning_hypercolumns_time.pdf} }}%
+    \qquad
+    \subfigure[]{{\includegraphics[width=5.5cm]{off_line_rule_learning_hypercolumns_diff.pdf} }}%
+    \caption{Results of training with different values of resting time. a) The weights after training. b) probabilities after training.}
+    \label{fig:off_line_learning_hypercolumns2}%
+\end{figure}
+
+
+
+\subsubsection{On-line vs off-line filters}
+Here we show the equivalence between the formulation of the filters as differential equations and the filters as convolutions. 
+\begin{align*}
+\tau_z \dfrac{dz}{dt} &= s(t) - z(t) \\
+\tau_z \mathcal{F}\{\dfrac{dz}{dt}\} &= \mathcal{F}\{s(t)\} -  \mathcal{F}\{ z(t) \}  \text{ \qquad Applying the Fourier transform} \\
+\tau_z i \nu \mathcal{F}\{ z(t) \} &=  \mathcal{F}\{s(t)\} -  \mathcal{F}\{ z(t) \}  \text{ \qquad Using the deviate rule} \\
+\mathcal{F}\{ z(t) \}(1 + \tau_z i \nu) &= \mathcal{F}\{s(t)\} \\ 
+\mathcal{F}\{ z(t) \} &= \mathcal{F}\{s(t)\} \left(\frac{1}{1 +\tau_z i \nu } \right) \text{ \qquad Factorizing and rearranging} \\ 
+z(t) &= \mathcal{F}^{-1} \Big\{ \mathcal{F}\{s(t)\} \cdot \left(\frac{1}{1 +\tau_z i \nu } \right) \Big\} \text{ \qquad Inverse}  \\ 
+z(t) &= \mathcal{F}^{-1} \Big\{ \mathcal{F}\{s(t)\} \Big\} \circledast \mathcal{F}^{-1} \Big\{  \frac{1}{1 +\tau_z i \nu } \Big\} \text{ \qquad Convolution}  \\ 
+z(t) &= \frac{1}{\tau_z } s(t) \circledast \mathcal{F}^{-1} \Big\{  \frac{1}{\frac{1}{\tau_z } + i \nu } \Big\} \text{ \qquad Identity and rearranging}  \\ 
+z(t) &= \frac{1}{\tau_z } s(t) \circledast e^{-\frac{t}{\tau_z}}u(t)  \text{ \qquad Heaviside function u(t)}  \\ 
+z(t) &= \frac{1}{\tau_z } \int_{-\infty}^{\infty} s(\tau) e^{-\frac{t - \tau}{\tau_z}}u(t - \tau) d\tau  \text{ \qquad Definition}  \\ 
+z(t) &= \frac{1}{\tau_z } \int_{-\infty}^{t} s(\tau) e^{-\frac{t - \tau}{\tau_z}} d\tau  \text{ \qquad Heaviside argument positive}
+\end{align*}
+
+\textbf{Structure of a single filter}
+
+
+\subsubsection{On-line rule}
 Once we know the dynamics of the system given a certain matrix the natural question to consider is whether we can learn the weight matrix. As described in \cite{sandberg2002bayesian} with the help of traces we can add on-line learning capabilities to the BCPNN neural network. 
 
 \begin{align}

@@ -32,17 +32,17 @@ epochs = 1
 matrix = create_orthogonal_canonical_representation(minicolumns, hypercolumns)
 network_representation = build_network_representation(matrix, minicolumns, hypercolumns)
 
-timed_input = TimedInput(minicolumns, hypercolumns, network_representation, dt, training_time, inter_pulse_interval=0.0,
+timed_input = TimedInput(network_representation, dt, training_time, inter_pulse_interval=0.0,
                          inter_sequence_interval=inter_sequence_interval, epochs=epochs)
 S = timed_input.build_timed_input()
 time = timed_input.time
 n_units = timed_input.n_units
 
 pi, pij = get_probabilities_from_network_representation(network_representation)
-w_static = get_weights_from_probabilities(pi, pi, pij, minicolumns, hypercolumns)
+w_static, beta_static = get_weights_from_probabilities(pi, pi, pij, minicolumns, hypercolumns)
 
 p_pre, p_post, P = timed_input.calculate_probabilities_from_time_signal(filtered=False)
-w_timed = get_weights_from_probabilities(p_pre, p_post, P, minicolumns, hypercolumns)
+w_timed, beta_timed = get_weights_from_probabilities(p_pre, p_post, P, minicolumns, hypercolumns)
 
 tau_z_pre = 0.050
 z_pre = timed_input.build_filtered_input_pre(tau_z_pre)
@@ -50,7 +50,7 @@ tau_z_post = 0.001
 z_post = timed_input.build_filtered_input_post(tau_z_post)
 
 pi_filtered, pj_filter, P_filtered = timed_input.calculate_probabilities_from_time_signal(filtered=True)
-w_filtered = get_weights_from_probabilities(pi_filtered, pj_filter, P_filtered, minicolumns, hypercolumns)
+w_filtered, beta_filtered = get_weights_from_probabilities(pi_filtered, pj_filter, P_filtered, minicolumns, hypercolumns)
 
 ###################
 ## Plot
@@ -184,9 +184,9 @@ aux = np.max(np.abs((aux_min, aux_max)))
 vmax = aux
 vmin = -aux
 
-ax1= fig4.add_subplot(121)
+ax1 = fig4.add_subplot(121)
 im = ax1.imshow(w_filtered, aspect=aspect, cmap=cmap, vmin=vmin, vmax=vmax)
-ax_static_w.set_title(r'$w_{filtered}$')
+ax1.set_title(r'$w_{filtered}$')
 
 divider = make_axes_locatable(ax1)
 cax = divider.append_axes('right', size='5%', pad=0.05)

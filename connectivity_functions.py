@@ -4,7 +4,7 @@ import IPython
 
 def log_epsilon(x, epsilon=1e-10):
 
-    return np.log(np.maximum(x, epsilon))
+    return np.log10(np.maximum(x, epsilon))
 
 
 def calculate_probability(patterns):
@@ -63,7 +63,7 @@ def get_weights_from_probabilities(pi, pj, pij, minicolumns, hypercolumns, small
 
     aux = np.copy(pi)
     aux[pi < small_number] = small_number
-    beta = np.log(aux)
+    beta = np.log10(aux)
 
     w = np.zeros((n_units, n_units))
     for index1, p1 in enumerate(pi):
@@ -75,7 +75,7 @@ def get_weights_from_probabilities(pi, pj, pij, minicolumns, hypercolumns, small
             else:
                 w[index1, index2] = pij[index1, index2] / (p1 * p2)
 
-    w = np.log(w)
+    w = np.log10(w)
 
     return w, beta
 
@@ -126,7 +126,7 @@ def get_beta(p, epsilon=1e-10):
     probability = np.copy(p)
     probability[p < epsilon] = epsilon
 
-    beta = np.log(probability)
+    beta = np.log10(probability)
 
     return beta
 
@@ -190,7 +190,9 @@ def strict_max(x, minicolumns):
 
     x = np.reshape(x, (x.size // minicolumns, minicolumns))
     z = np.zeros_like(x)
-    z[:, np.argmax(x, axis=1)] = 1
+    maxes = np.argmax(x, axis=1)
+    for max_index, max_aux in enumerate(maxes):
+        z[max_index, max_aux] = 1
 
     return z.reshape(x.size)
 
