@@ -69,7 +69,7 @@ def get_weights_from_probabilities(pi, pj, pij, minicolumns, hypercolumns, small
     for index1, p1 in enumerate(pi):
         for index2, p2 in enumerate(pj):
             if p1 == 0 or p2 == 0:
-                w[index1, index2] = 1.0
+                w[index1, index2] = small_number
             elif pij[index1, index2] < small_number:
                 w[index1, index2] = small_number
             else:

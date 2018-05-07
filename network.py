@@ -655,31 +655,38 @@ class TimedInput:
     def __init__(self, network_representation, dt, training_time, inter_pulse_interval=0.0,
                      inter_sequence_interval=0.0, resting_time=0, epochs=1):
 
+        self.n_patterns = network_representation.shape[0]
+        if isinstance(training_time, (float, int)):
+            self.training_times = [training_time for i in range(self.n_patterns)]
+        elif isinstance(training_time, (list, np.ndarray)):
+            self.training_times = training_time
+        else:
+            raise TypeError('Type of training time not understood')
+
         self.n_units = network_representation.shape[1]
         self.dt = dt
 
         self.network_representation = network_representation
         self.epochs = epochs
-        self.training_time = training_time
         self.inter_pulse_interval = inter_pulse_interval
         self.inter_sequence_interval = inter_sequence_interval
         self.resting_time = resting_time
 
-        self.n_patterns = network_representation.shape[0]
-        self.pattern_length = int(training_time / dt)
         self.inter_pulse_interval_length = int(inter_pulse_interval / dt)
         self.inter_sequence_interval_length = int(inter_sequence_interval / dt)
         self.resting_time_length = int(resting_time / dt)
 
         # Add the patterns and the pulse
-        self.n_time_total = (self.pattern_length + self.inter_pulse_interval_length) * self.n_patterns
-        # Add the inter-sequence-time
-        self.n_time_total += self.inter_sequence_interval_length
-        # Add this epochs - 1 times
-        self.n_time_total *= (epochs - 1)
-        # Add the patterns and the pulse again
-        self.n_time_total += (self.pattern_length + self.inter_pulse_interval_length) * self.n_patterns
-        # Add the resting time
+        self.n_time_total = 0
+
+        for epoch in range(epochs):
+            for training_time in self.training_times:
+                pattern_length = int(training_time / dt)
+                self.n_time_total += pattern_length + self.inter_pulse_interval_length
+            # Add inter sequence interval or all but the last epoch
+            if epoch < epochs - 1:
+                self.n_time_total += self.inter_sequence_interval_length
+
         self.n_time_total += self.resting_time_length
 
         self.T_total = self.n_time_total * self.dt
@@ -694,12 +701,15 @@ class TimedInput:
     def build_timed_input(self):
         end = 0
         for epoch in range(self.epochs):
-            for pattern in range(self.n_patterns):
+            for pattern, training_time in enumerate(self.training_times):
+                pattern_length = int(training_time / self.dt)
                 start = end
-                end = start + self.pattern_length
+                end = start + pattern_length
+                # Add the inputt
                 indexes = np.where(self.network_representation[pattern])[0]
                 self.S[indexes, start:end] = 1
                 end += self.inter_pulse_interval_length
+
             end += self.inter_sequence_interval_length
 
         return self.S
