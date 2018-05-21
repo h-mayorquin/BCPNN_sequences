@@ -91,13 +91,14 @@ def calculate_angle_from_history(manager):
     """
     history = manager.history
     patterns_dic = manager.patterns_dic
-    stored_pattern_indexes = manager.stored_patterns_indexes
+    stored_pattern_indexes = np.array(list(patterns_dic.keys()))
+    num_patterns = max(stored_pattern_indexes) + 1
 
     o = history['o'][1:]
     if o.shape[0] == 0:
         raise ValueError('You did not record the history of unit activities o')
 
-    distances = np.zeros((o.shape[0], manager.nn.minicolumns))
+    distances = np.zeros((o.shape[0], num_patterns))
 
     for index, state in enumerate(o):
         # Obtain the dot product between the state of the network at each point in time and each pattern
@@ -187,6 +188,38 @@ def calculate_recall_time_quantities(manager, T_recall, T_cue, n, sequences):
 
     return total_sequence_time, mean, std, success, timings
 
+def calculate_recall_success(manager, T_recall,  I_cue, T_cue, n, patterns_indexes):
+
+    n_patterns = len(patterns_indexes)
+    successes = 0
+    for i in range(n):
+        manager.run_network_recall(T_recall=T_recall, I_cue=I_cue, T_cue=T_cue)
+
+        distances = calculate_angle_from_history(manager)
+        winning = calculate_winning_pattern_from_distances(distances)
+        timings = calculate_patterns_timings(winning, manager.dt, remove=0.010)
+        pattern_sequence = [x[0] for x in timings]
+
+        if pattern_sequence[:n_patterns] == patterns_indexes:
+            successes += 1
+
+    success_rate = successes * 100.0 / n
+
+    return success_rate
+
+
+def calculate_recall_success_sequences(manager, T_recall, T_cue, n, sequences):
+    successes = []
+    total_sequences = len(sequences)
+    for n_recall in range(total_sequences):
+        sequence_to_recall = sequences[n_recall]
+        I_cue = sequence_to_recall[0]
+
+        success = calculate_recall_success(manager, T_recall, I_cue, T_cue, n, patterns_indexes=sequence_to_recall)
+        successes.append(success)
+
+    return successes
+
 
 def calculate_compression_factor(manager, training_time, exclude_extrema=True, remove=0):
     """
@@ -211,39 +244,6 @@ def calculate_compression_factor(manager, training_time, exclude_extrema=True, r
     compression = [training_time / timings[pattern_index][1] for pattern_index in indexes]
 
     return compression
-
-
-def calculate_recall_success(manager, T_recall,  I_cue, T_cue, n, patterns_indexes):
-
-    n_patterns = len(patterns_indexes)
-    successes = 0
-    for i in range(n):
-        manager.run_network_recall(T_recall=T_recall, I_cue=I_cue, T_cue=T_cue)
-
-        distances = calculate_angle_from_history(manager)
-        winning = calculate_winning_pattern_from_distances(distances)
-        timings = calculate_patterns_timings(winning, manager.dt, remove=0.010)
-        pattern_sequence = [x[0] for x in timings]
-
-        if pattern_sequence[:n_patterns] == patterns_indexes:
-            successes += 1
-
-    success_rate = successes * 100.0/ n
-
-    return success_rate
-
-
-def calculate_recall_success_sequences(manager, T_recall, T_cue, n, sequences):
-    successes = []
-    total_sequences = len(sequences)
-    for n_recall in range(total_sequences):
-        sequence_to_recall = sequences[n_recall]
-        I_cue = sequence_to_recall[0]
-
-        success = calculate_recall_success(manager, T_recall, I_cue, T_cue, n, patterns_indexes=sequence_to_recall)
-        successes.append(success)
-
-    return successes
 
 
 # Functions to extract connectivity

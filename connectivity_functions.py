@@ -69,7 +69,7 @@ def get_weights_from_probabilities(pi, pj, pij, minicolumns, hypercolumns, small
     for index1, p1 in enumerate(pi):
         for index2, p2 in enumerate(pj):
             if p1 == 0 or p2 == 0:
-                w[index1, index2] = small_number
+                w[index1, index2] = 1
             elif pij[index1, index2] < small_number:
                 w[index1, index2] = small_number
             else:
@@ -131,7 +131,7 @@ def get_beta(p, epsilon=1e-10):
     return beta
 
 
-def softmax(input_vector, t=1.0, minicolumns=2):
+def softmax(input_vector, G=1.0, minicolumns=2):
     """Calculate the softmax of a list of numbers w.
 
     Parameters
@@ -163,7 +163,7 @@ def softmax(input_vector, t=1.0, minicolumns=2):
     x = np.copy(input_vector)
     x_size = x.size
     x = np.reshape(x, (x_size // minicolumns, minicolumns))
-    x = np.array(x) / t
+    x = G * np.array(x)
 
     x[x < lower_bound] = lower_bound
     x[x > upper_bound] = upper_bound
