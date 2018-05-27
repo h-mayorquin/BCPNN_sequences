@@ -1,7 +1,6 @@
 import numpy as np
 import IPython
 
-
 def log_epsilon(x, epsilon=1e-10):
 
     return np.log10(np.maximum(x, epsilon))
@@ -390,6 +389,126 @@ def create_artificial_manager(hypercolumns, minicolumns, sequences, value, inhib
 
     return manager
 
+
+def fill_connection(w, state_from, state_to, minicolumns, value):
+    for hypercolumn_from, minicolumn_from in enumerate(state_from):
+        for hypercolum_to, minicolumn_to in enumerate(state_to):
+            index_from = hypercolumn_from * minicolumns + minicolumn_from
+            index_to = hypercolum_to * minicolumns + minicolumn_to
+            w[index_to, index_from] = value
+
+
+def fill_sequence(w, minicolumns, sequence, weights_values, extension, alpha):
+    n_states = len(sequence)
+    # For every state
+    for state_index, value in enumerate(weights_values):
+        state_from = sequence[state_index]
+        effective_extension = min(extension + 1, n_states - state_index)
+        # Fill everything under extension gets out of the bonds of the sequence
+        for next_index in range(effective_extension):
+            effective_value = value - next_index * alpha
+            state_to = sequence[state_index + next_index]
+            fill_connection(w, state_from, state_to, minicolumns, effective_value)
+
+    # Fll the laste value
+    last_state = sequence[-1]
+    fill_connection(w, last_state, last_state, minicolumns, value)
+
+
+def create_matrix_from_sequences_representation(minicolumns, hypercolumns, sequences, weights_collection,
+                                                extension, alpha):
+    # Create the matrix
+    w = np.zeros((minicolumns * hypercolumns, minicolumns * hypercolumns))
+    # Fill it
+    for sequence, weights_values in zip(sequences, weights_collection):
+
+        fill_sequence(w, minicolumns, sequence, weights_values, extension, alpha)
+
+    return w
+
+
+def create_weights_from_two_sequences(nn, dt, n_patterns, s, r, mixed_start, contiguous,
+                                      training_time, inter_pulse_interval, inter_sequence_interval,
+                                      epochs, resting_time, TimedInput):
+    filtered = True
+    minicolumns = nn.minicolumns
+    hypercolumns = nn.hypercolumns
+
+    tau_z_pre_ampa = nn.tau_z_pre_ampa
+    tau_z_post_ampa = nn.tau_z_post_ampa
+
+    seq1, seq2 = produce_overlaped_sequences(minicolumns, hypercolumns, n_patterns, s, r,
+                                             mixed_start=mixed_start, contiguous=contiguous)
+
+    nr1 = build_network_representation(seq1, minicolumns, hypercolumns)
+    nr2 = build_network_representation(seq2, minicolumns, hypercolumns)
+
+    # Get the first
+    timed_input = TimedInput(nr1, dt, training_time, inter_pulse_interval=inter_pulse_interval,
+                             inter_sequence_interval=inter_sequence_interval, epochs=epochs,
+                             resting_time=resting_time)
+
+    S = timed_input.build_timed_input()
+    z_pre = timed_input.build_filtered_input_pre(tau_z_pre_ampa)
+    z_post = timed_input.build_filtered_input_post(tau_z_post_ampa)
+
+    pi1, pj1, P1 = timed_input.calculate_probabilities_from_time_signal(filtered=filtered)
+    w_timed1 = get_weights_from_probabilities(pi1, pj1, P1, minicolumns, hypercolumns)
+    t1 = timed_input.T_total
+
+    # Get the second
+    timed_input = TimedInput(nr2, dt, training_time, inter_pulse_interval=inter_pulse_interval,
+                             inter_sequence_interval=inter_sequence_interval, epochs=epochs,
+                             resting_time=resting_time)
+
+    S = timed_input.build_timed_input()
+    z_pre = timed_input.build_filtered_input_pre(tau_z_pre_ampa)
+    z_post = timed_input.build_filtered_input_post(tau_z_post_ampa)
+    t2 = timed_input.T_total
+
+    pi2, pj2, P2 = timed_input.calculate_probabilities_from_time_signal(filtered=filtered)
+    w_timed2 = get_weights_from_probabilities(pi2, pj2, P2, minicolumns, hypercolumns)
+    t_total = t1 + t2
+
+    # Mix
+    pi_total = (t1 / t_total) * pi1 + ((t_total - t1) / t_total) * pi2
+    pj_total = (t1 / t_total) * pj1 + ((t_total - t1) / t_total) * pj2
+    P_total = (t1 / t_total) * P1 + ((t_total - t1) / t_total) * P2
+    w_total, beta = get_weights_from_probabilities(pi_total, pj_total, P_total, minicolumns, hypercolumns)
+
+    return seq1, seq2, nr1, nr2, w_total, beta
+
+
+def produce_overlaped_sequences(minicolumns, hypercolumns, n_patterns, s, r, mixed_start=False, contiguous=True):
+    n_r = int(r * n_patterns / 2)
+    n_s = int(s * hypercolumns)
+    n_size = int(n_patterns / 2)
+
+    matrix = create_orthogonal_canonical_representation(minicolumns, hypercolumns)[:n_patterns]
+    sequence1 = matrix[:n_size]
+    sequence2 = matrix[n_size:]
+
+    if mixed_start:
+        start_index = 0
+        end_index = n_r
+    else:
+        start_index = max(int(0.5 * (n_size - n_r)), 0)
+        end_index = min(start_index + n_r, n_size)
+
+    for index in range(start_index, end_index):
+        if contiguous:
+            sequence2[index, :n_s] = sequence1[index, :n_s]
+        else:
+            sequence2[index, ...] = sequence1[index, ...]
+            sequence2[index, n_s:] = n_patterns + index
+
+    if False:
+        print(n_r)
+        print(n_size)
+        print(start_index)
+        print(end_index)
+
+    return sequence1, sequence2
 
 def create_indepedent_sequences(minicolumns, sequence_length):
     n_sequences = minicolumns / sequence_length

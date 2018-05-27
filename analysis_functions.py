@@ -30,41 +30,6 @@ def get_weights(manager, from_pattern, to_pattern, mean=True):
         w_rest = np.max(manager.nn.w_ampa[(to_pattern + 1):, from_pattern])
     return w_self, w_next, w_rest
 
-def create_artificial_matrix(hypercolumns, minicolumns, number_of_patterns, value, inhibition, decay_factor,
-                             extension, diagonal_zero, diagonal_across, diagonal_value, sequence_decay=1.0,
-                             free_attractor=False, free_attractor_value=0.5):
-    # Creat the small matrix
-    w_small = np.ones((minicolumns, minicolumns)) * inhibition
-    for i in range(number_of_patterns):
-        if i < number_of_patterns - extension - 1:
-            aux = extension
-            for j in range(aux):
-                w_small[i + 1 + j, i] = value * (decay_factor ** j) * (sequence_decay ** i)
-        else:
-            aux = number_of_patterns - i - 1
-            for j in range(aux):
-                w_small[i + 1 + j, i] = value * (decay_factor ** j) * (sequence_decay ** i)
-
-    # Add identity
-    if diagonal_across:
-        w_small[:number_of_patterns, :number_of_patterns] += np.diag(np.ones(number_of_patterns) * (diagonal_value - inhibition))
-
-    # Add free attractor
-    if free_attractor:
-        w_small[number_of_patterns:, number_of_patterns:] = free_attractor_value
-
-    # Create the big matrix
-    w = np.zeros((minicolumns * hypercolumns, minicolumns * hypercolumns))
-    for j in range(hypercolumns):
-        for i in range(hypercolumns):
-            w[i * minicolumns:(i + 1) * minicolumns, j * minicolumns:(j + 1) * minicolumns] = w_small
-
-            # Remove diagonal
-        if diagonal_zero:
-            w[np.diag_indices_from(w)] = 0
-
-    return w
-
 
 def calculate_distance_from_history(history, patterns, normalize=True):
 
@@ -91,8 +56,15 @@ def calculate_angle_from_history(manager):
     """
     history = manager.history
     patterns_dic = manager.patterns_dic
-    stored_pattern_indexes = np.array(list(patterns_dic.keys()))
-    num_patterns = max(stored_pattern_indexes) + 1
+    if not manager.stored_patterns_indexes:  # This test for empty list
+        stored_pattern_indexes = np.array(list(patterns_dic.keys()))
+        num_patterns = max(stored_pattern_indexes) + 1
+    else:
+        stored_pattern_indexes = manager.stored_patterns_indexes
+        num_patterns = max(stored_pattern_indexes) + 1
+
+
+        manager.n_patterns
 
     o = history['o'][1:]
     if o.shape[0] == 0:
@@ -187,6 +159,7 @@ def calculate_recall_time_quantities(manager, T_recall, T_cue, n, sequences):
         std = 0
 
     return total_sequence_time, mean, std, success, timings
+
 
 def calculate_recall_success(manager, T_recall,  I_cue, T_cue, n, patterns_indexes):
 
