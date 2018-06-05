@@ -219,6 +219,34 @@ def calculate_compression_factor(manager, training_time, exclude_extrema=True, r
     return compression
 
 
+def calculate_recall_success_nr(manager, nr, T_recall, T_cue, debug=False, remove=0.010,
+                                reset=True, empty_history=True):
+    n_seq = nr.shape[0]
+    I_cue = nr[0]
+
+    # Do the recall
+    manager.run_network_recall(T_recall=T_recall, I_cue=I_cue, T_cue=T_cue,
+                               reset=reset, empty_history=empty_history)
+    distances = calculate_angle_from_history(manager)
+    winning = calculate_winning_pattern_from_distances(distances)
+    timings = calculate_patterns_timings(winning, manager.dt, remove=remove)
+    pattern_sequence = [x[0] for x in timings]
+
+    # Assume succesfful until proven otherwise
+    success = 1.0
+    for index, pattern_index in enumerate(pattern_sequence[:n_seq]):
+        pattern = manager.patterns_dic[pattern_index]
+        goal_pattern = nr[index]
+        # Compare arrays of the recalled apttern with teh goal
+        if not np.array_equal(pattern, goal_pattern):
+            success = 0.0
+            break
+    if debug:
+        return success, timings, pattern_sequence
+    else:
+        return success
+
+
 # Functions to extract connectivity
 def calculate_total_connections(manager, from_pattern, to_pattern, ampa=False, normalize=True):
 

@@ -48,10 +48,10 @@ def create_orthogonal_canonical_representation(minicolumns, hypercolumns):
 def build_network_representation(matrix, minicolumns, hypercolumns):
     network_representation = np.zeros((len(matrix), minicolumns * hypercolumns), dtype='int')
 
-    for patten, indexes in enumerate(matrix):
+    for pattern, indexes in enumerate(matrix):
         for hypercolumn_index, minicolumn_index in enumerate(indexes):
             index = hypercolumn_index * minicolumns + minicolumn_index
-            network_representation[patten, index] = 1
+            network_representation[pattern, index] = 1
 
     return network_representation
 
@@ -216,186 +216,13 @@ def simple_bcpnn_matrix(minicolumns, w_self, w_next, w_rest):
     return w
 
 
-def load_minicolumn_matrix(w, sequence_indexes, value=1, inhibition=-1, extension=1,
-                           decay_factor=1.0, sequence_decay=1.0):
-
-    n_patterns = len(sequence_indexes)
-
-    # Transform it to linear decay
-    sequence_decay = value * sequence_decay
-
-    for index, pattern_index in enumerate(sequence_indexes[:-1]):
-        # Determine the value to load
-        sequence_value = value - sequence_decay * index
-        # This is in case it decays bellow 0
-        if sequence_value <= 0:
-            sequence_value = 0
-
-        # First we set the the sequence connection
-        from_unit = pattern_index
-        to_unit = sequence_indexes[index + 1]
-
-        # If the unit has never been modified change the value to store
-        w[to_unit, from_unit] = sequence_value
-
-
-        # Then set the after-effects (extension)
-        if index < n_patterns - extension - 1:
-            aux = extension
-        else:
-            aux = n_patterns - index - 1
-
-        aux_decay_factor = sequence_value * decay_factor
-        for j in range(1, aux):
-            to_unit = sequence_indexes[index + 1 + j]
-
-            to_store = sequence_value - aux_decay_factor * j
-            # If this gets bellow 0
-            if to_store <= 0:
-                to_store = 0
-            w[to_unit, from_unit] = to_store
-
-def load_minicolumn_matrix2(w, sequence_indexes, value=1, inhibition=-1, extension=1,
-                           decay_factor=1.0, sequence_decay=1.0):
-
-    n_patterns = len(sequence_indexes)
-
-    # Transform it to linear decay
-    sequence_decay = value * sequence_decay
-
-    for index, pattern_index in enumerate(sequence_indexes[:-1]):
-        # Determine the value to load
-        sequence_value = value - sequence_decay * index
-
-        if sequence_value <= 0:
-            sequence_value = 0
-
-        # First we set the the sequence connection
-        from_unit = pattern_index
-        to_unit = sequence_indexes[index + 1]
-
-        # If the unit has never been modified change the value to store
-        if w[to_unit, from_unit] == inhibition:
-            w[to_unit, from_unit] = sequence_value
-        # If the unit is bene modified before increase the plasticity
-        else:
-            w[to_unit, from_unit] += sequence_value
-
-        # Then set the after-effects (extension)
-        if index < n_patterns - extension - 1:
-            aux = extension
-        else:
-            aux = n_patterns - index - 1
-
-        aux_decay_factor = sequence_value * decay_factor
-        for j in range(1, aux):
-            to_unit = sequence_indexes[index + 1 + j]
-
-            to_store = sequence_value - aux_decay_factor * j
-            if to_store <= 0:
-                to_store = 0
-
-            # If the unit has never been modified change the value to store
-            if w[to_unit, from_unit] == inhibition:
-                w[to_unit, from_unit] = to_store
-            # If the unit is bene modified before increase the plasticity
-            else:
-                w[to_unit, from_unit] += to_store
-
-            w[to_unit, from_unit] = to_store
-
-
-def load_diagonal(w, sequence_index, value=1.0):
-    for index, pattern_index in enumerate(sequence_index):
-        w[pattern_index, pattern_index] = value
-
-
-def expand_matrix(w_small, hypercolumns, minicolumns):
-
-    w_big = np.zeros((minicolumns * hypercolumns, minicolumns * hypercolumns))
-    for j in range(hypercolumns):
-        for i in range(hypercolumns):
-            w_big[i * minicolumns:(i + 1) * minicolumns, j * minicolumns:(j + 1) * minicolumns] = w_small
-
-    return w_big
-
-
-def artificial_connectivity_matrix(hypercolumns, minicolumns, sequences, value=1, inhibition=-1, extension=1,
-                                   decay_factor=0.5, sequence_decay=1.0, diagonal_zero=True, self_influence=True,
-                                   ampa=False):
-
-    w = np.ones((minicolumns, minicolumns)) * inhibition
-
-    if self_influence:
-        for sequence_indexes in sequences:
-            load_diagonal(w, sequence_indexes, value)
-
-    if not ampa:
-        for sequence_indexes in sequences:
-            load_minicolumn_matrix(w, sequence_indexes, value, inhibition, extension, decay_factor, sequence_decay)
-
-    # Create the big matrix
-    w_big = expand_matrix(w, hypercolumns, minicolumns)
-
-    # Remove diagonal
-    if diagonal_zero:
-        w_big[np.diag_indices_from(w_big)] = 0
-
-    return w_big
-
-
-def artificial_beta_vector(hypercolumns, minicolumns, sequences, intensity, beta_decay):
-
-    small_beta = np.zeros(minicolumns)
-    pattern_indexes = [pattern for sequence in sequences for pattern in sequence]
-    for index, pattern_index in enumerate(pattern_indexes):
-        small_beta[pattern_index] += intensity * (beta_decay ** index)
-
-    # Now we make it bigger
-    beta = []
-    for i in range(hypercolumns):
-        beta = np.hstack((beta, small_beta))
-
-    return beta
-
-
-def create_artificial_manager(hypercolumns, minicolumns, sequences, value, inhibition, extension, decay_factor,
-                              sequence_decay, dt, BCPNNFast, NetworkManager, ampa=True, beta=False, beta_decay=1.0,
-                              self_influence=True, values_to_save=['o']):
-
-    w_nmda = artificial_connectivity_matrix(hypercolumns, minicolumns, sequences, value=value, inhibition=inhibition,
-                                            extension=extension, decay_factor=decay_factor,
-                                            sequence_decay=sequence_decay,
-                                            diagonal_zero=True, self_influence=self_influence, ampa=False)
-
-    if ampa:
-        w_ampa = artificial_connectivity_matrix(hypercolumns, minicolumns, sequences, value=value, inhibition=inhibition,
-                                            extension=extension, decay_factor=decay_factor,
-                                            sequence_decay=sequence_decay,
-                                            diagonal_zero=True, self_influence=True, ampa=True)
-
-    nn = BCPNNFast(hypercolumns=hypercolumns, minicolumns=minicolumns, prng=np.random.RandomState(seed=0))
-    nn.w = w_nmda
-    if ampa:
-        nn.w_ampa = w_ampa
-
-    if beta:
-        nn.beta = artificial_beta_vector(hypercolumns, minicolumns, sequences, intensity=value, beta_decay=beta_decay)
-
-    manager = NetworkManager(nn, dt=dt, values_to_save=values_to_save)
-
-    for pattern_indexes in sequences:
-        manager.stored_patterns_indexes += pattern_indexes
-
-    return manager
-
-
 def fill_connection(w, state_from, state_to, minicolumns, value):
     for hypercolumn_from, minicolumn_from in enumerate(state_from):
         for hypercolum_to, minicolumn_to in enumerate(state_to):
             index_from = hypercolumn_from * minicolumns + minicolumn_from
             index_to = hypercolum_to * minicolumns + minicolumn_to
             w[index_to, index_from] = value
+
 
 
 def fill_sequence(w, minicolumns, sequence, weights_values, extension, alpha):
@@ -416,20 +243,62 @@ def fill_sequence(w, minicolumns, sequence, weights_values, extension, alpha):
 
 
 def create_matrix_from_sequences_representation(minicolumns, hypercolumns, sequences, weights_collection,
-                                                extension, alpha):
+                                                extension, alpha, w_min=None):
     # Create the matrix
-    w = np.zeros((minicolumns * hypercolumns, minicolumns * hypercolumns))
+    if w_min is None:
+        w_min = min([min(x) for x in weights_collection]) - (extension + 1) * alpha
+    w = np.ones((minicolumns * hypercolumns, minicolumns * hypercolumns)) * w_min
     # Fill it
     for sequence, weights_values in zip(sequences, weights_collection):
-
         fill_sequence(w, minicolumns, sequence, weights_values, extension, alpha)
 
     return w
 
 
-def create_weights_from_two_sequences(nn, dt, n_patterns, s, r, mixed_start, contiguous,
-                                      training_time, inter_pulse_interval, inter_sequence_interval,
-                                      epochs, resting_time, TimedInput):
+def fill_connection_aditive(w, state_from, state_to, minicolumns, value, w_min):
+    for hypercolumn_from, minicolumn_from in enumerate(state_from):
+        for hypercolum_to, minicolumn_to in enumerate(state_to):
+            index_from = hypercolumn_from * minicolumns + minicolumn_from
+            index_to = hypercolum_to * minicolumns + minicolumn_to
+            if np.abs(w[index_to, index_from] - w_min) < 10e-20:
+                w[index_to, index_from] = value
+            else:
+                w[index_to, index_from] += value
+
+
+def fill_sequence_aditive(w, minicolumns, sequence, weights_values, extension, alpha, w_min):
+    n_states = len(sequence)
+    # For every state
+    for state_index, value in enumerate(weights_values):
+        state_from = sequence[state_index]
+        effective_extension = min(extension + 1, n_states - state_index)
+        # Fill everything under extension gets out of the bonds of the sequence
+        for next_index in range(effective_extension):
+            effective_value = value - next_index * alpha
+            state_to = sequence[state_index + next_index]
+            fill_connection_aditive(w, state_from, state_to, minicolumns, effective_value, w_min)
+
+    # Fll the laste value
+    last_state = sequence[-1]
+    fill_connection_aditive(w, last_state, last_state, minicolumns, value, w_min)
+
+
+def create_matrix_from_sequences_representation_aditive(minicolumns, hypercolumns, sequences, weights_collection,
+                                                extension, alpha, w_min=None):
+    # Create the matrix
+    if w_min is None:
+        w_min = min([min(x) for x in weights_collection]) - (extension + 1) * alpha
+    w = np.ones((minicolumns * hypercolumns, minicolumns * hypercolumns)) * w_min
+    # Fill it
+    for sequence, weights_values in zip(sequences, weights_collection):
+        fill_sequence_aditive(w, minicolumns, sequence, weights_values, extension, alpha, w_min)
+
+    return w
+
+
+def create_weights_from_overlap_protocol(nn, dt, n_patterns, s, r, mixed_start, contiguous,
+                                         training_time, inter_pulse_interval, inter_sequence_interval,
+                                         epochs, resting_time, TimedInput):
     filtered = True
     minicolumns = nn.minicolumns
     hypercolumns = nn.hypercolumns
@@ -510,220 +379,3 @@ def produce_overlaped_sequences(minicolumns, hypercolumns, n_patterns, s, r, mix
 
     return sequence1, sequence2
 
-def create_indepedent_sequences(minicolumns, sequence_length):
-    n_sequences = minicolumns / sequence_length
-    sequences = [[j*sequence_length + i for i in range(sequence_length)] for j in range(n_sequences)]
-
-    return sequences
-
-
-def create_simple_overlap_sequences(minicolumns, sequence_length, overlap):
-    sequences = []
-    increase = sequence_length - overlap
-    starting_point = 0
-    while starting_point + sequence_length <= minicolumns:
-        sequences.append([starting_point + i for i in range(sequence_length)])
-        starting_point += increase
-
-    return sequences
-
-
-# The functions for generating sequences
-def test_overload_criteria(sample, overload_matrix, overload):
-    criteria = False
-    if np.all(overload_matrix[sample] < overload):
-        criteria = True
-    return criteria
-
-
-def modify_overload_matrix(sample, overload_matrix):
-    overload_matrix[sample] += 1
-
-
-def remove_overloaded_indexes(overload_matrix, overload, available, removed):
-    # Take out the numbers who are overload enough
-    indexes_to_remove = np.where(overload_matrix >= overload)[0]
-    for index in indexes_to_remove:
-        if index not in removed:
-            available.remove(index)
-            removed.append(index)
-
-
-def test_overlap_criteria(sample, sequences, overlap_dictionary, overlap, candidate_overlap, one_to_one):
-    """
-    Test whether the new sample is not in violation of the overlap criteria
-    :param sample:
-    :param sequences:
-    :param overlap_dictionary:
-    :param overlap:
-    :param candidate_overlap:
-    :param one_to_one:
-    :return: overlap_criteria
-    """
-
-    overlap_criteria = True
-
-    for sequence_number, overlap_vector in overlap_dictionary.items():
-        # Intersection
-        intersection = [val for val in sample if val in sequences[sequence_number]]
-
-        # If intersection is greater than overlap than overlap then change criteria
-        candidate_overlap[intersection] = 1
-
-        if one_to_one:
-            if len(intersection) > overlap:
-                overlap_criteria = False
-                break
-
-        # I have not figure out what this does, apparently it selects for overlap with the same units
-#        else:
-#            if np.sum(candidate_overlap) > overlap:
-#                overlap_criteria = False
-#                break
-
-    if not one_to_one:
-        for sequence_number, overlap_vector in overlap_dictionary.items():
-            intersection = [val for val in sample if val in sequences[sequence_number]]
-            if len(intersection) + np.sum(overlap_vector) > overlap:
-                overlap_criteria = False
-
-    return overlap_criteria
-
-
-def modify_overlap_dictionary(overlap_dictionary, candidate_overlap, sample, n_sequence, sequences):
-    """
-    This modifies the dictionary once a particular sample has been accepted in the sequences
-
-    :param overlap_dictionary: The dictionary with over
-    :param candidate_overlap:
-    :param sample:
-    :param n_sequence:
-    :param sequences:
-    :return:
-    """
-    for sequence_number, overlap_vector in overlap_dictionary.items():
-        intersection = [val for val in sample if val in sequences[sequence_number]]
-        overlap_vector[intersection] = 1
-
-    # Insert the overlap_candidate
-    overlap_dictionary[n_sequence] = candidate_overlap
-
-
-def remove_overlaped_indexes(overlap_dictionary, sequences, overlap, available, removed):
-    for sequence_number, overlap_vector in overlap_dictionary.items():
-        if np.sum(overlap_vector) >= overlap:
-            indexes_to_remove = sequences[sequence_number]
-            for index in indexes_to_remove:
-                if index not in removed:
-                    available.remove(index)
-                    removed.append(index)
-
-
-def calculate_random_sequence(minicolumns, sequence_length, overlap, overload,  one_to_one=True,
-                              prng=np.random.RandomState(seed=0), total_sequences=10, max_iter=1e5):
-    # Auxiliary structures
-    sequences = []
-    overload_matrix = np.zeros(minicolumns)
-    available = [i for i in range(minicolumns)]
-    removed = []
-    overlap_dictionary = {}
-
-    n_sequence = 0
-    iter = 0
-
-    while n_sequence < total_sequences and iter < max_iter:
-        iter += 1
-
-        # Generate a possible sample
-        if len(available) > sequence_length:
-            sample = prng.choice(available, size=sequence_length, replace=False)
-        else:
-            break
-
-        # Criteria for overload
-        overload_criteria = test_overload_criteria(sample, overload_matrix, overload)
-
-        # Criteria for overlap
-        candidate_overlap = np.zeros(minicolumns)
-        overlap_criteria = test_overlap_criteria(sample, sequences, overlap_dictionary, overlap, candidate_overlap,
-                                                 one_to_one)
-
-        if overlap_criteria and overload_criteria:
-            # Add the sample
-            sample_list = list(sample.copy())
-            # sample_list.sort()
-            sequences.append(sample_list)
-
-            # Overlap
-            modify_overlap_dictionary(overlap_dictionary, candidate_overlap, sample, n_sequence, sequences)
-            if not one_to_one:
-                remove_overlaped_indexes(overlap_dictionary, sequences, overlap, available, removed)
-
-            # Overload
-            modify_overload_matrix(sample, overload_matrix)
-            remove_overloaded_indexes(overload_matrix, overload, available, removed)
-
-            n_sequence += 1
-
-    return sequences, overlap_dictionary, overload_matrix
-
-
-def calculate_overlap_matrix(sequences):
-    overlap_matrix = np.zeros((len(sequences), len(sequences)))
-    for index_1, sequence_1 in enumerate(sequences):
-        for index_2, sequence_2 in enumerate(sequences):
-            intersection = [val for val in sequence_1 if val in sequence_2]
-            overlap_matrix[index_1, index_2] = len(intersection)
-
-    overlap_matrix[np.diag_indices_from(overlap_matrix)] = 0
-
-    return overlap_matrix
-
-
-def calculate_overlap_one_to_all(overlap_dictionary):
-    total_overlap = np.zeros(len(overlap_dictionary))
-    for index, overlap_vector in overlap_dictionary.items():
-        total_overlap[index] = np.sum(overlap_vector)
-
-    return total_overlap
-
-
-def calculate_overlap_one_to_one(sequences):
-    overlap_matrix = calculate_overlap_matrix(sequences)
-    max_overlap = np.max(overlap_matrix, axis=1)
-
-    return max_overlap
-
-
-
-################
-# Old functions
-#################
-
-# def get_w_old(P, p, diagonal_zero=True):
-#     outer = np.outer(p, p)
-#     P_copy = np.copy(P)
-#
-#     outer[outer < epsilon**2] = epsilon**2
-#     P_copy[P < epsilon] = epsilon**2
-#
-#     w = np.log(P_copy / outer)
-#
-#     #IPython.embed()
-#     if diagonal_zero:
-#         w[np.diag_indices_from(w)] = 0
-#     return w
-#
-#
-# def get_w_protocol1(P, p):
-#     p_copy = np.copy(p)
-#     P_copy = np.copy(P)
-#
-#     p_copy[p < epsilon] = epsilon
-#     P_copy[P < epsilon] = epsilon * epsilon
-#
-#     aux = np.outer(p_copy, p_copy)
-#     w = np.log(P_copy / aux)
-#     # IPython.embed()
-#
-#     return w

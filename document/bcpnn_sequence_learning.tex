@@ -142,15 +142,15 @@ We will now proceed to characterize the properties of the simplified version of 
 If we have system with only one type of connectivity, and winner-takes-all selectivity one state will be suppressed in favor of the other as soon as the support of the second state is bigger. In more detail, if we start with a system where the first unit is activated its own support will be $s_1 = g w_{self} - a(t)$ where a is the adaptation current which grows in time. This will continue as long as the first unit is activated and as a consequence the support for the unit will be decreasing. On the other hand the second unit is receiving a constant current to its support $s_2 = g w_{next}$, if this process continues by continuity there will be a point when the support of the first unit will be equal to that of the second:
 
 \begin{align*}
-s_1 &= s_2 \\
-gw_{self} - g_{a} (1 - e^{\frac{t}{\tau_a}}) &=  g w_{next}
+s_{self} &= s_{next} \\
+g_{\beta} \beta_{self} + g_w w_{self} - g_{a} (1 - e^{\frac{t}{\tau_a}}) &= g_{\beta} \beta_{next} + g_w w_{next}
 \end{align*}
-
+%g_{beta} \beta w_{self} 
 
 Where we have substituted the proper term for adaptation. We can solve for $t$ in the expression above to obtain the persistent time $T_{persistent}$:
 
 \begin{align}
-T_{persistence} = \tau_{a} \ln \left(\frac{g_a}{g_a - g_w (w_{self}  - w_{next})} \right) \label{eq:simple_bcpnn_persistence_time}
+T_{persistence} = \tau_{a} \ln \left(\frac{g_a}{g_a - g_w (w_{self}  - w_{next}) - g_{beta} (\beta_{self} - \beta_{self})} \right) \label{eq:simple_bcpnn_persistence_time}
 \end{align}
 
 We notice that the equation behaves linearly with regards to $\tau_a$ and logarithmically with regards to $g_a$, $g_w$, $w{self}$ $w_{next}$. Even more importantly, certain combinations of the latter parameters will give raise to singularity points. This is important because close to this values the persistence time can be varied greatly with small variations in the respective parameters. In other words we have a wide dynamical variability in $T_{persistence}$ as in \cite{murray2017learning}. We proceed now to describe the scaling for each of the parameters in a more concise way and to compare the theory derived above with simulations. 

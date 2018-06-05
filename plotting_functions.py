@@ -209,13 +209,14 @@ def plot_network_activity_angle(manager):
     history = manager.history
     # Get the angles
     angles = calculate_angle_from_history(manager)
-
+    patterns_dic = manager.patterns_dic
+    n_patters = len(patterns_dic)
     # Plot
     sns.set_style("whitegrid", {'axes.grid': False})
 
     cmap = 'plasma'
     extent1 = [0, manager.nn.minicolumns * manager.nn.hypercolumns, T_total, 0]
-    extent2 = [0, manager.nn.minicolumns, T_total, 0]
+    extent2 = [0, n_patters, T_total, 0]
 
     fig = plt.figure(figsize=(16, 12))
 

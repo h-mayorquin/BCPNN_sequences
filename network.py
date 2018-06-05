@@ -111,7 +111,6 @@ class BCPNNPerfect:
         # State variables
         self.o = np.zeros(self.n_units) * (1.0 / self.minicolumns)
         self.s = np.zeros(self.n_units)
-        self.beta = np.log(np.ones_like(self.o) * (1.0 / self.minicolumns))
 
         # NMDA values
         self.i_nmda = np.zeros(self.n_units)
