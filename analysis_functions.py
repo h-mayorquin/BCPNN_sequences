@@ -1,5 +1,15 @@
 import numpy as np
+import itertools
 
+
+def calculate_T_persistence(tau_a, g_w, w_diff, g_a, tau_m, perfect=True):
+
+    B = (g_w / g_a) * w_diff
+    T = tau_a * np.log(1 / (1 - B))
+    if not perfect:
+        r = tau_m / tau_a
+        T += tau_a * np.log(1 / (1 - r))
+    return T
 
 def get_weights_collections(w, sequence):
     w_self_vector = w[np.diag_indices_from(w)]
@@ -230,7 +240,9 @@ def calculate_recall_success_nr(manager, nr, T_recall, T_cue, debug=False, remov
     distances = calculate_angle_from_history(manager)
     winning = calculate_winning_pattern_from_distances(distances)
     timings = calculate_patterns_timings(winning, manager.dt, remove=remove)
-    pattern_sequence = [x[0] for x in timings]
+    # Get the element of the sequence without consecutive duplicates
+    aux = [x[0] for x in timings]
+    pattern_sequence = [i for i, x in itertools.groupby(aux)]
 
     # Assume succesfful until proven otherwise
     success = 1.0

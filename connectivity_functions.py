@@ -224,7 +224,6 @@ def fill_connection(w, state_from, state_to, minicolumns, value):
             w[index_to, index_from] = value
 
 
-
 def fill_sequence(w, minicolumns, sequence, weights_values, extension, alpha):
     n_states = len(sequence)
     # For every state
@@ -260,10 +259,8 @@ def fill_connection_aditive(w, state_from, state_to, minicolumns, value, w_min):
         for hypercolum_to, minicolumn_to in enumerate(state_to):
             index_from = hypercolumn_from * minicolumns + minicolumn_from
             index_to = hypercolum_to * minicolumns + minicolumn_to
-            if np.abs(w[index_to, index_from] - w_min) < 10e-20:
+            if value > w[index_to, index_from] :
                 w[index_to, index_from] = value
-            else:
-                w[index_to, index_from] += value
 
 
 def fill_sequence_aditive(w, minicolumns, sequence, weights_values, extension, alpha, w_min):
