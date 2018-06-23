@@ -11,6 +11,7 @@ def calculate_T_persistence(tau_a, g_w, w_diff, g_a, tau_m, perfect=True):
         T += tau_a * np.log(1 / (1 - r))
     return T
 
+
 def get_weights_collections(w, sequence):
     w_self_vector = w[np.diag_indices_from(w)]
     w_next_vector = []
