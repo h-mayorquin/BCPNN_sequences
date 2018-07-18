@@ -153,7 +153,9 @@ class BCPNNPerfect:
     def update_continuous(self, dt=1.0, sigma=None):
 
         if sigma is None:
-            sigma = self.prng.normal(0, self.sigma, self.n_units)
+            noise = self.sigma * np.sqrt(dt) * self.prng.normal(0, 1.0, self.n_units)
+        else:
+            noise = sigma
 
         if self.normalized_current:
             normalized_constant = self.hypercolumns
@@ -174,14 +176,14 @@ class BCPNNPerfect:
                        + self.g_beta * self.beta  # Bias
                        + self.g_I * self.I  # Input current
                        - self.g_a * self.a  # Adaptation
-                       + sigma)  # This last term is the noise
+                       + noise)  # This last term is the noise
         else:
             self.s += (dt / self.tau_m) * (self.i_nmda  # NMDA effects
                                            + self.i_ampa  # Ampa effects
                                            + self.g_beta * self.beta  # Bias
                                            + self.g_I * self.I  # Input current
                                            - self.g_a * self.a  # Adaptation
-                                           + sigma  # This last term is the noise
+                                           + noise  # This last term is the noise
                                            - self.s)  # s follow all of the s above
 
         # Soft-max
@@ -413,7 +415,8 @@ class NetworkManager:
         if self.nn.sigma < self.nn.epsilon:
             noise = np.zeros((time.size, self.nn.n_units))
         else:
-            noise = self.nn.prng.normal(0, self.nn.sigma, size=(time.size, self.nn.n_units))
+            noise = self.nn.prng.normal(loc=0, scale=1, size=(time.size, self.nn.n_units))
+            noise *= self.nn.sigma * np.sqrt(self.dt)
 
         # Initialize run history
         step_history = {}
